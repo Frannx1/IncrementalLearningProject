@@ -8,7 +8,7 @@ from tqdm import tqdm
 from config import Config
 
 
-def train_model(net, train_dataloader, optimizer, criterion, scheduler, num_epochs, log_dir=None):
+def train_model(net, train_dataloader, criterion, optimizer, scheduler, num_epochs, log_dir=None):
     # By default, everything is loaded to cpu
     net = net.to(Config.DEVICE)  # this will bring the network to GPU if DEVICE is cuda
 
@@ -60,8 +60,8 @@ def train_model(net, train_dataloader, optimizer, criterion, scheduler, num_epoc
                         tb_writer.add_scalar('accuracy', accuracy.item(), current_step)
 
             # Compute gradients for each layer and update weights
-            loss.backward()  # backward pass: computes gradients
-            optimizer.step()  # update weights based on accumulated gradients
+            loss.backward()     # backward pass: computes gradients
+            optimizer.step()    # update weights based on accumulated gradients
 
             current_step += 1
 
@@ -73,8 +73,8 @@ def train_model(net, train_dataloader, optimizer, criterion, scheduler, num_epoc
 
 
 def test_model(net, test_dataloader):
-    net = net.to(Config.DEVICE) # this will bring the network to GPU if DEVICE is cuda
-    net.train(False) # Set Network to evaluation mode
+    net = net.to(Config.DEVICE)     # this will bring the network to GPU if DEVICE is cuda
+    net.train(False)                # Set Network to evaluation mode
 
     running_corrects = 0
     for images, labels in tqdm(test_dataloader):
