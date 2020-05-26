@@ -45,7 +45,7 @@ def sequential_train(net, split_datasets, criterion, optimizer_factory,
         if log_dir_prefix is not None:
             log_dir_prefix = os.path.join(log_dir_prefix, 'group_' + str(idx))
 
-        optimizer = optimizer_factory.create_optimizer()
+        optimizer = optimizer_factory.create_optimizer(net)
         scheduler = scheduler_factory.create_scheduler(optimizer)
 
         train_model(net, train_dataloader, criterion, optimizer, scheduler, num_epochs, log_dir_prefix)
