@@ -5,10 +5,12 @@ from torch.backends import cudnn
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
+from config import Config
+
 
 def train_model(net, train_dataloader, optimizer, criterion, scheduler, num_epochs, log_dir=None):
     # By default, everything is loaded to cpu
-    net = net.to(DEVICE)  # this will bring the network to GPU if DEVICE is cuda
+    net = net.to(Config.DEVICE)  # this will bring the network to GPU if DEVICE is cuda
 
     cudnn.benchmark  # Calling this optimizes runtime
 
@@ -29,8 +31,8 @@ def train_model(net, train_dataloader, optimizer, criterion, scheduler, num_epoc
         # Iterate over the dataset
         for images, labels in train_dataloader:
             # Bring data over the device of choice
-            images = images.to(DEVICE)
-            labels = labels.to(DEVICE)
+            images = images.to(Config.DEVICE)
+            labels = labels.to(Config.DEVICE)
 
             net.train()  # Sets module in training mode
 
@@ -45,7 +47,7 @@ def train_model(net, train_dataloader, optimizer, criterion, scheduler, num_epoc
             loss = criterion(outputs, labels)
 
             # Log the information and add to tensorboard
-            if current_step % LOG_FREQUENCY == 0:
+            if current_step % Config.LOG_FREQUENCY == 0:
                 with torch.no_grad():
                     _, preds = torch.max(outputs, 1)
                     accuracy = torch.sum(preds == labels) / float(len(labels))
@@ -71,13 +73,13 @@ def train_model(net, train_dataloader, optimizer, criterion, scheduler, num_epoc
 
 
 def test_model(net, test_dataloader):
-    net = net.to(DEVICE) # this will bring the network to GPU if DEVICE is cuda
+    net = net.to(Config.DEVICE) # this will bring the network to GPU if DEVICE is cuda
     net.train(False) # Set Network to evaluation mode
 
     running_corrects = 0
     for images, labels in tqdm(test_dataloader):
-        images = images.to(DEVICE)
-        labels = labels.to(DEVICE)
+        images = images.to(Config.DEVICE)
+        labels = labels.to(Config.DEVICE)
 
         # Forward Pass
         class_pred = net(images)
