@@ -32,7 +32,7 @@ def sequential_train(net, split_datasets, optimizer, criterion, scheduler, batch
         now = datetime.now()
         log_dir = os.path.join(log_dir, now.strftime('%m-%d %H:%M:%S'))
 
-    for idx, train_dataset, test_dataset in enumerate(split_datasets):
+    for idx, (train_dataset, test_dataset) in enumerate(split_datasets):
         print('\nGroup {}/{}. Training on classes: {}'.format(idx, split_datasets.get_total_groups(),
                                                               split_datasets.get_train_groups_classes()[idx]))
 

@@ -110,10 +110,13 @@ class iCIFARSplit:
             first_class = int(group_idx * self.class_per_group)
             last_class = int((group_idx + 1) * self.class_per_group)
             range_classes = range(first_class, last_class)
+            download = group_idx == 0
 
             self.train_groups_classes[group_idx] = range_classes
-            self.train_groups.append(iCIFAR100(transform=train_transform, classes=range_classes))
-            self.test_groups.append(iCIFAR100(transform=test_transform, train=False, classes=range(last_class)))
+            self.train_groups.append(iCIFAR100(transform=train_transform, classes=range_classes,
+                                               download=download))
+            self.test_groups.append(iCIFAR100(transform=test_transform, train=False,
+                                              classes=range(last_class), download=download))
 
     def get_train_group(self, i):
         return self.train_groups[i]
