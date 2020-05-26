@@ -3,6 +3,7 @@ import os
 import torch
 from torch.backends import cudnn
 from torch.utils.tensorboard import SummaryWriter
+
 from tqdm import tqdm
 
 from config import Config
@@ -16,9 +17,9 @@ def train_model(net, train_dataloader, criterion, optimizer, scheduler, num_epoc
 
     if log_dir is not None:
         # TensorboardX summary writer
-        params_save = 'lr: {}, batch: {}, epochs: {}'.format(
-            scheduler.get_last_lr()[0], train_dataloader.batch_size,
-            num_epochs)
+        params_save = 'lr: {}, batch: {}, epochs: {}'.format(scheduler.get_last_lr()[0],
+                                                             train_dataloader.batch_size,
+                                                             num_epochs)
 
         log_dir = os.path.join(log_dir, params_save)
         tb_writer = SummaryWriter(log_dir=log_dir)

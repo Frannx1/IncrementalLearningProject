@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 
-import torch
+from torch.utils.data import DataLoader
 
 from trainers.train_once import train_model, test_model
 
@@ -38,10 +38,9 @@ def sequential_train(net, split_datasets, criterion, optimizer_factory,
         print('\nGroup {}/{}. Training on classes: {}'.format(idx, split_datasets.get_total_groups(),
                                                               split_datasets.get_train_groups_classes()[idx]))
 
-        train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size,
-                                                       shuffle=True, num_workers=4)
-        test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size,
-                                                      shuffle=True, num_workers=4)
+        train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
+        test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
+
         if log_dir_prefix is not None:
             log_dir_prefix = os.path.join(log_dir_prefix, 'group_' + str(idx))
 
