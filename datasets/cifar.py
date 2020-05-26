@@ -124,10 +124,10 @@ class iCIFARSplit:
     def get_test_group(self, i):
         return self.test_groups[i]
 
-    def get_total_groups(self, i):
+    def get_total_groups(self):
         return self.total_groups
 
-    def get_train_groups_classes(self, i):
+    def get_train_groups_classes(self):
         return self.train_groups_classes
 
     def __len__(self):
