@@ -116,7 +116,7 @@ class iCIFARSplit:
             self.train_groups.append(iCIFAR100(transform=train_transform, classes=range_classes,
                                                download=download))
             self.test_groups.append(iCIFAR100(transform=test_transform, train=False,
-                                              classes=range(last_class), download=download))
+                                              classes=range(last_class), download=False))
 
     def get_train_group(self, i):
         return self.train_groups[i]
