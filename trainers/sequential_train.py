@@ -6,8 +6,8 @@ import torch
 from trainers.train_once import train_model, test_model
 
 
-def basic_incremental_train(net, split_datasets, optimizer, criterion, scheduler, batch_size=128, num_epochs=10,
-                            log_dir=None):
+def sequential_train(net, split_datasets, optimizer, criterion, scheduler, batch_size=128,
+                     num_epochs=10, log_dir=None):
     """ This function trains a net with incremental learning applied to the
         split dataset, using a basic procedure. For each iteration over the
         split dataset, it will train the network on the training dataset,
