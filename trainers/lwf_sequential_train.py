@@ -52,12 +52,13 @@ def lwf_sequential_train(net, split_datasets, criterion, optimizer_factory,
         test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
 
         if log_dir_prefix is not None:
-            log_dir_prefix = os.path.join(log_dir_prefix, 'group_' + str(idx))
+            log_dir = os.path.join(log_dir_prefix, 'group_' + str(idx))
 
         optimizer = optimizer_factory.create_optimizer(net)
         scheduler = scheduler_factory.create_scheduler(optimizer)
 
-        lwf_train_model(net, train_dataloader, criterion, optimizer, scheduler, num_epochs, n_known_classes, log_dir_prefix, previous_model)
+        lwf_train_model(net, train_dataloader, criterion, optimizer, scheduler, num_epochs, n_known_classes,
+                        log_dir, previous_model)
 
         test_acc = test_model(net, test_dataloader)
 
