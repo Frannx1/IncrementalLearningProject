@@ -57,14 +57,16 @@ def lwf_sequential_train(net, split_datasets, criterion, optimizer_factory,
         optimizer = optimizer_factory.create_optimizer(net)
         scheduler = scheduler_factory.create_scheduler(optimizer)
 
+        # Train on the current group
         lwf_train_model(net, train_dataloader, criterion, optimizer, scheduler, num_epochs, n_known_classes,
                         log_dir, previous_model)
 
+        # Evaluate on the groups seen up to this iteration
         test_acc = test_model(net, test_dataloader)
 
         if log_dir_prefix is not None:
             # Log the test accuracy after training a group
-            tb_writer.add_scalar('test accuracy', test_acc.item(), idx)
+            tb_writer.add_scalar('test accuracy', float(test_acc), idx)
 
         n_known_classes += split_datasets.get_total_groups()
 
