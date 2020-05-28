@@ -4,6 +4,7 @@ from datetime import datetime
 
 from torch import nn
 from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
 
 from trainers.lwf_train import lwf_train_model
 from trainers.train_once import test_model
@@ -38,6 +39,7 @@ def lwf_sequential_train(net, split_datasets, criterion, optimizer_factory,
     if log_dir_prefix is not None:
         now = datetime.now()
         log_dir_prefix = os.path.join(log_dir_prefix, now.strftime('%m-%d %H:%M:%S'))
+        tb_writer = SummaryWriter(log_dir=log_dir_prefix)
 
     n_known_classes = 0
     previous_model = None
@@ -57,7 +59,11 @@ def lwf_sequential_train(net, split_datasets, criterion, optimizer_factory,
 
         lwf_train_model(net, train_dataloader, criterion, optimizer, scheduler, num_epochs, n_known_classes, log_dir_prefix, previous_model)
 
-        test_model(net, test_dataloader)
+        test_acc = test_model(net, test_dataloader)
+
+        if log_dir_prefix is not None:
+            # Log the test accuracy after training a group
+            tb_writer.add_scalar('test accuracy', test_acc.item(), idx)
 
         n_known_classes += split_datasets.get_total_groups()
 
