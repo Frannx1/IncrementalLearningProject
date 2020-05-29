@@ -157,3 +157,13 @@ def resnet56(pretrained=False, **kwargs):
     model = ResNet(Bottleneck, [n, n, n], **kwargs)
     return model
 
+
+def get_resnet(resnet_type="32"):
+    if resnet_type == "20":
+        return resnet20()
+    elif resnet_type == "32":
+        return resnet32()
+    elif resnet_type == "56":
+        return resnet56()
+    else:
+        raise ValueError("TODO")

@@ -64,19 +64,6 @@ class iCIFAR100(CIFAR100):
     def __len__(self):
         return len(self.data)
 
-    def get_image_class(self, label):
-        return self.data[np.array(self.targets) == label]
-
-    def append(self, images, labels):
-        """Append dataset with images and labels
-        Args:
-            images: Tensor of shape (N, C, H, W)
-            labels: list of labels
-        """
-
-        self.data = np.concatenate((self.data, images), axis=0)
-        self.targets = self.targets + labels
-
 
 class iCIFARSplit:
     """ An iterator that contains the CIFAR100 dataset split in a given number of groups,

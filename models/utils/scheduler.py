@@ -1,9 +1,9 @@
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 
 from torch import optim
 
 
-class SchedulerFactory(object):
+class SchedulerFactory(ABC):
 
     def __init__(self, *args, **kwargs):
         self.args = args
