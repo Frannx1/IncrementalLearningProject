@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
 
-def incermental_train(incremental_learner, split_datasets, optimizer_factory,
+def incremental_train(incremental_learner, split_datasets, optimizer_factory,
                       scheduler_factory, batch_size=128, num_epochs=10,
                       log_dir_prefix=None):
     """ This function trains a net with incremental learning applied to the
