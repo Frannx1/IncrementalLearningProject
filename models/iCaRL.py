@@ -101,7 +101,7 @@ class iCaRL(MultiTaskLearner):
         features = []
         qty = 0
 
-        for images, _ in dataloader:
+        for images in dataloader:
             images = images.to(Config.DEVICE)
             features.append(self.features_extractor(images))
 
