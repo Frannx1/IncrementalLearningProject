@@ -23,7 +23,7 @@ class iCaRL(MultiTaskLearner):
     """
 
     def __init__(self, resnet_type="32", num_classes=10, k=2000):
-        super(iCarl, self).__init__()
+        super(iCaRL, self).__init__()
 
         self.k = k
         self.n_classes = num_classes
