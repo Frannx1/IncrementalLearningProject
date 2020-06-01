@@ -30,7 +30,7 @@ class iCaRL(MultiTaskLearner):
         self.n_known = 0
 
         self.features_extractor = get_resnet(resnet_type)
-        self.feature_extractor.fc = nn.Sequential()
+        self.features_extractor.fc = nn.Sequential()
         self.classifier = nn.Linear(self.features_extractor.out_dim, num_classes)
 
         torch.nn.init.xavier_uniform_(self.classifier.weight)
