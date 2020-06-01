@@ -5,9 +5,9 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
 
-def sequential_train(incremental_learner, split_datasets, optimizer_factory,
-                     scheduler_factory, batch_size=128, num_epochs=10,
-                     log_dir_prefix=None):
+def incermental_train(incremental_learner, split_datasets, optimizer_factory,
+                      scheduler_factory, batch_size=128, num_epochs=10,
+                      log_dir_prefix=None):
     """ This function trains a net with incremental learning applied to the
         split dataset, using a basic procedure. For each iteration over the
         split dataset, it will train the network on the training dataset,
