@@ -18,13 +18,13 @@ class MultiTaskLearner(nn.Module):
         pass
 
     @abstractmethod
-    def train_task(self, train_loader, val_loader):
+    def train_task(self, train_loader, optimizer, scheduler, num_epochs, val_loader=None, log_dir=None):
         pass
 
-    def after_task(self, inc_dataset):
+    def after_task(self, train_loader):
         pass
 
     @abstractmethod
-    def eval_task(self, data_loader):
+    def eval_task(self, eval_loader):
         pass
 

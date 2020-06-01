@@ -1,7 +1,9 @@
 import time
 
-import numpy as np
 import torch
+from torch.nn import functional as F
+
+from config import Config
 
 
 def l2_normalize(tensor):
@@ -15,10 +17,8 @@ def remove_row(matrix, row_idx):
     ))
 
 
-def get_closest_feature(center, features):
-    normalized_features = l2_normalize(features)
-    distances = torch.pow(center - normalized_features, 2).sum(-1)
-    return distances.argmin().item()
+def to_onehot(labels, n_classes):
+    return torch.eye(n_classes)[labels]
 
 
 def timer(func):
@@ -30,3 +30,33 @@ def timer(func):
 
         return res
     return _timer
+
+
+def distillation_loss(logits, old_logits):
+    # The distillation loss is computed over all the previous already known classes
+    assert len(logits) == len(old_logits)
+
+    return sum(
+        q * torch.log(g) + (1 - q) * torch.log(1 - g)
+        for q, g in zip(F.sigmoid(old_logits), F.sigmoid(logits))
+    )
+
+
+def classification_and_distillation_loss(outputs, labels, previous_output=None, new_idx=0):
+    outputs, labels = outputs.to(Config.DEVICE), labels.to(Config.DEVICE)
+
+    clf_loss = F.binary_cross_entropy_with_logits(outputs, labels)
+
+    if new_idx > 0:
+        assert previous_output is not None
+        previous_output = previous_output.to(Config.DEVICE)
+        distil_loss = F.binary_cross_entropy_with_logits(
+            input=outputs[..., :new_idx],
+            target=previous_output[..., :new_idx]
+        )
+    else:
+        # First learning no distillation loss
+        distil_loss = torch.zeros(1, requires_grad=False).to(Config.DEVICE)
+
+    return clf_loss, distil_loss
+

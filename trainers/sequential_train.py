@@ -31,6 +31,7 @@ def sequential_train(net, split_datasets, criterion, optimizer_factory,
             If None, it will no log.
     """
 
+    log_dir = None
     if log_dir_prefix is not None:
         now = datetime.now()
         log_dir_prefix = os.path.join(log_dir_prefix, now.strftime('%m-%d %H:%M:%S'))

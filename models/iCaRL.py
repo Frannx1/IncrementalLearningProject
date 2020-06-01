@@ -1,13 +1,15 @@
 import numpy as np
 import torch
 from torch import nn
+from torch.backends import cudnn
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from config import Config
 from models.incremental_base import MultiTaskLearner
 from models.resnet import get_resnet
 from models.utils import l2_normalize
-from models.utils.utilities import timer, get_closest_feature, remove_row
+from models.utils.utilities import timer, remove_row, classification_and_distillation_loss, to_onehot
 
 
 class iCarl(MultiTaskLearner):
@@ -25,6 +27,7 @@ class iCarl(MultiTaskLearner):
 
         self.k = k
         self.n_classes = n_classes
+        self.n_known = 0
 
         self.features_extractor = get_resnet(resnet_type)
         self.classifier = nn.Linear(self.features_extractor.out_dim, n_classes)
@@ -34,6 +37,8 @@ class iCarl(MultiTaskLearner):
 
         self.exemplars = {}
         self.exemplars_means = None
+
+        self.old_model = None
 
     def forward(self, x):
         x = self.features_extractor(x)
@@ -58,6 +63,12 @@ class iCarl(MultiTaskLearner):
 
         return np.array(pred_labels)
 
+    @staticmethod
+    def _get_closest_feature(center, features):
+        normalized_features = l2_normalize(features)
+        distances = torch.pow(center - normalized_features, 2).sum(-1)
+        return distances.argmin().item()
+
     @timer
     def build_exemplars(self, class_loader, class_index):
         exemplars = []
@@ -74,7 +85,7 @@ class iCarl(MultiTaskLearner):
             # TODO: checkear porque esta implementacion usa normalizacion_l2 en vez de dividir por k.
             #       Se entiende que al hacer (exemplars_feature_sum / k) daria como resultado
             #       exemplars_feature_mean. Porque el paper ademas hace features / k?
-            idx = get_closest_feature(class_mean, features + exemplars_feature_sum)
+            idx = self._get_closest_feature(class_mean, features + exemplars_feature_sum)
 
             exemplars.append(class_loader.dataset.__getitem__(idx))
             exemplars_feature_sum += features[idx]
@@ -139,88 +150,75 @@ class iCarl(MultiTaskLearner):
         self.classifier.bias.data[:self.n_classes - n] = bias
 
     def before_task(self, train_loader, val_loader=None):
-        n = set(train_loader.dataset.targets)
+        n = len(set(train_loader.dataset.targets))
         self._add_n_classes(n)
 
-    def train_task(self, train_loader, val_loader=None):
+    def train_task(self, train_loader, optimizer, scheduler, num_epochs, val_loader=None, log_dir=None):
+        self.to(Config.DEVICE)  # this will bring the network to GPU if DEVICE is cuda
 
-        for epoch in range(self._n_epochs):
-            _loss, val_loss = 0., 0.
+        cudnn.benchmark  # Calling this optimizes runtime
+        current_step = 0
+        # Start iterating over the epochs
+        for epoch in range(num_epochs):
+            print('Starting epoch {}/{}, LR = {}'.format(epoch + 1, num_epochs, scheduler.get_last_lr()))
 
-            self._scheduler.step()
+            # Iterate over the dataset
+            for images, labels in train_loader:
+                # Bring data over the device of choice
+                images = images.to(Config.DEVICE)
+                labels = labels.to(Config.DEVICE)
 
-            prog_bar = tqdm(train_loader)
-            for i, (inputs, targets) in enumerate(prog_bar, start=1):
-                self._optimizer.zero_grad()
+                self.train()  # Sets module in training mode
 
-                loss_graph = 0
-                loss_2 = 0
-                feature_metric = None
+                optimizer.zero_grad()  # Zero-ing the gradients
 
-                if self._data_transform_memory is not None:
-                    features = self._network.extract(
-                        self._data_transform_memory.to(self._network.device)
+                labels_onehot = to_onehot(labels, self.n_classes).to(self._device)
+
+                # Forward pass to the network
+                outputs = self._network(images)
+
+                previous_output = None
+                if self.old_model is not None:
+                    previous_output = self.old_model(images)
+
+                clf_loss, distil_loss = classification_and_distillation_loss(
+                        outputs,
+                        labels_onehot,
+                        previous_output=previous_output,
+                        new_idx=self.n_known
                     )
+                loss = clf_loss + distil_loss
+                loss.backward()  # backward pass: computes gradients
+                optimizer.step()  # update weights based on accumulated gradients
 
-                    feature_metric = torch.cdist(features, features)
+                current_step += 1
 
-                    print('feature_metric:', feature_metric)
-                    print('feature_metric.shape:', feature_metric.shape)
+            # Step the scheduler
+            scheduler.step()
 
-                    # get the upper triangle matrix to calc the loss
-                    first_part = self.metric_2.mul(torch.pow(feature_metric, 2))
-                    second_part = (1 - self.metric_2).mul(
-                        torch.pow(torch.clamp(self.margin - feature_metric, min=0.0), 2))
-                    print('first_part:', first_part)
-                    print('second_part:', second_part)
-                    loss_graph += first_part + second_part
-                    print('loss_graph:', loss_graph)
-                    print('loss_graph.shape:', loss_graph.shape)
-                    count = 0
-                    for i in range(loss_graph.shape[0]):
-                        for j in range(loss_graph.shape[1]):
-                            if i >= j:
-                                loss_2 += loss_graph[i][j]
-                                count += 1
-                    loss_2 = (loss_2 / count) / 2
-                    print('loss_2:', loss_2)
-                    print('loss_2.shape:', loss_2.shape)
-                    loss_2.backward(retain_graph=True)
+    def after_task(self, train_loader):
+        self.reduce_exemplars()
+        for class_idx in set(train_loader.dataset.targets):
+            class_loader = DataLoader(train_loader.dataset.get_class_images(class_idx))
+            self.build_exemplars(class_loader, class_idx)
 
-                # loss for classification and distillation
-                loss = self._forward_loss(inputs, targets)
+        self.n_known = self.n_classes
+        self.old_model = self._network.copy().freeze()
 
-                if not utils._check_loss(loss):
-                    import pdb
-                    pdb.set_trace()
+    def eval_task(self, eval_loader):
+        self.to(Config.DEVICE)  # this will bring the network to GPU if DEVICE is cuda
+        self.train(False)  # Set Network to evaluation mode
 
-                print('loss:', loss)
-                print('loss.shape:', loss.shape)
-                loss.backward()
+        running_corrects = 0
+        for images, labels in tqdm(eval_loader):
+            images = images.to(Config.DEVICE)
+            labels = labels.to(Config.DEVICE)
 
-                self._optimizer.step()
+            # Get predictions
+            preds = self.classify(images)
 
-                _loss += loss.item()
+            running_corrects += torch.sum(preds == labels.data).data.item()
 
-                if val_loader is not None and i == len(train_loader):
-                    for inputs, targets in val_loader:
-                        val_loss += self._forward_loss(inputs, targets).item()
-
-                prog_bar.set_description(
-                    "Task {}/{}, Epoch {}/{} => Clf loss: {}, Val loss: {}".format(
-                        self._task + 1, self._n_tasks,
-                        epoch + 1, self._n_epochs,
-                        round(_loss / i, 3),
-                        round(val_loss, 3)
-                    )
-                )
-
-    def after_task(self, inc_dataset):
-        self.build_examplars(inc_dataset)
-
-        self._old_model = self._network.copy().freeze()
-
-    def eval_task(self, data_loader):
-        ypred, ytrue = compute_accuracy(self._network, data_loader, self._class_means)
-
-        return ypred, ytrue
+        # Calculate Accuracy
+        accuracy = running_corrects / float(len(eval_loader.dataset))
+        return accuracy

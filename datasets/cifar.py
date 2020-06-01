@@ -64,6 +64,9 @@ class iCIFAR100(CIFAR100):
     def __len__(self):
         return len(self.data)
 
+    def get_class_images(self, label):
+        return self.data[np.array(self.targets) == label]
+
 
 class iCIFARSplit:
     """ An iterator that contains the CIFAR100 dataset split in a given number of groups,
