@@ -1,5 +1,5 @@
 from .resnet import resnet20, resnet32, resnet56
-from .iCaRL import iCarl
+from .iCaRL import iCaRL
 
 __all__ = ('resnet20', 'resnet32', 'resnet56',
-           'iCarl')
+           'iCaRL')

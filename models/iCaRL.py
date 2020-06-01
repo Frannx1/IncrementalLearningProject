@@ -12,7 +12,7 @@ from models.utils import l2_normalize
 from models.utils.utilities import timer, remove_row, classification_and_distillation_loss, to_onehot
 
 
-class iCarl(MultiTaskLearner):
+class iCaRL(MultiTaskLearner):
     """Implementation of iCarl.
     # References:
     - iCaRL: Incremental Classifier and Representation Learning
@@ -22,15 +22,16 @@ class iCarl(MultiTaskLearner):
       https://github.com/imyzx2017/icarl.pytorch/blob/master/icarl.py
     """
 
-    def __init__(self, resnet_type="32", n_classes=10, k=2000):
+    def __init__(self, resnet_type="32", num_classes=10, k=2000):
         super(iCarl, self).__init__()
 
         self.k = k
-        self.n_classes = n_classes
+        self.n_classes = num_classes
         self.n_known = 0
 
         self.features_extractor = get_resnet(resnet_type)
-        self.classifier = nn.Linear(self.features_extractor.out_dim, n_classes)
+        self.feature_extractor.fc = nn.Sequential()
+        self.classifier = nn.Linear(self.features_extractor.out_dim, num_classes)
 
         torch.nn.init.xavier_uniform_(self.classifier.weight)
         self.classifier.bias.data.fill_(0.01)
