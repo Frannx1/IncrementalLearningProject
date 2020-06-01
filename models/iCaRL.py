@@ -151,8 +151,9 @@ class iCaRL(MultiTaskLearner):
         self.classifier.bias.data[:self.n_classes - n] = bias
 
     def before_task(self, train_loader, val_loader=None):
-        n = len(set(train_loader.dataset.targets))
-        self._add_n_classes(n)
+        if self.n_known > 0:
+            n = len(set(train_loader.dataset.targets))
+            self._add_n_classes(n)
 
     def train_task(self, train_loader, optimizer, scheduler, num_epochs, val_loader=None, log_dir=None):
         self.to(Config.DEVICE)  # this will bring the network to GPU if DEVICE is cuda
@@ -173,10 +174,10 @@ class iCaRL(MultiTaskLearner):
 
                 optimizer.zero_grad()  # Zero-ing the gradients
 
-                labels_onehot = to_onehot(labels, self.n_classes).to(self._device)
+                labels_onehot = to_onehot(labels, self.n_classes).to(Config.DEVICE)
 
                 # Forward pass to the network
-                outputs = self._network(images)
+                outputs = self(images)
 
                 previous_output = None
                 if self.old_model is not None:
