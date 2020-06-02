@@ -79,7 +79,7 @@ class iCaRL(MultiTaskLearner):
             features, class_mean = self._extract_features_and_mean(class_loader)
 
         self._expand_exemplars_means(class_index, class_mean)
-        exemplars_feature_sum = torch.zeros((self.features_extractor.out_dim,))
+        exemplars_feature_sum = torch.zeros((self.features_extractor.out_dim,)).to(Config.DEVICE)
 
         for k in range(min(self._m, len(features))):
             # argmin(class_mean - 1/k * (features + exemplars_sum))
