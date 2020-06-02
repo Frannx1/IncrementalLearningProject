@@ -223,7 +223,7 @@ class iCaRL(MultiTaskLearner):
             labels = labels.to(Config.DEVICE)
 
             # Get predictions
-            preds = self.classify(images)
+            preds = self.classify(images).to(Config.DEVICE)
 
             running_corrects += torch.sum(preds == labels.data).data.item()
 
