@@ -64,7 +64,7 @@ class iCaRL(MultiTaskLearner):
             distances = torch.pow(centers - feature, 2).sum(-1)
             pred_labels.append(distances.argmin().item())
 
-        return np.array(pred_labels)
+        return torch.from_numpy(np.array(pred_labels))
 
     @staticmethod
     def _get_closest_feature(center, features):
@@ -225,7 +225,7 @@ class iCaRL(MultiTaskLearner):
             # Get predictions
             preds = self.classify(images)
 
-            running_corrects += (preds == labels.numpy()).sum()
+            running_corrects += torch.sum(preds == labels.data).data.item()
 
         # Calculate Accuracy
         accuracy = running_corrects / float(len(eval_loader.dataset))
