@@ -5,6 +5,7 @@ import torch
 from torch import nn
 from torch.backends import cudnn
 from torch.utils.data import DataLoader, Subset
+from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 from config import Config
@@ -160,6 +161,10 @@ class iCaRL(MultiTaskLearner):
     def train_task(self, train_loader, optimizer, scheduler, num_epochs, val_loader=None, log_dir=None):
         self.to(Config.DEVICE)  # this will bring the network to GPU if DEVICE is cuda
 
+        if log_dir is not None:
+            # TensorboardX summary writer
+            tb_writer = SummaryWriter(log_dir=log_dir)
+
         cudnn.benchmark  # Calling this optimizes runtime
         current_step = 0
         # Start iterating over the epochs
@@ -192,6 +197,22 @@ class iCaRL(MultiTaskLearner):
                         new_idx=self.n_known
                     )
                 loss = clf_loss + distil_loss
+
+                # Log the information and add to tensorboard
+                if current_step % Config.LOG_FREQUENCY == 0:
+                    with torch.no_grad():
+                        _, preds = torch.max(outputs, 1)
+                        accuracy = torch.sum(preds == labels) / float(len(labels))
+
+                        print('Epoch: {} \tStep: {} \tLoss: {:.4f} \tAcc: {:.4f}  Class loss: {:.4f}  Dis loss: {:.4f}'
+                              .format(epoch + 1, current_step, loss.item(), accuracy.item(), clf_loss.item(), distil_loss.item()))
+
+                        if log_dir is not None:
+                            tb_writer.add_scalar('loss', loss.item(), current_step)
+                            tb_writer.add_scalar('accuracy', accuracy.item(), current_step)
+                            tb_writer.add_scalar('class_loss', clf_loss.item(), current_step)
+                            tb_writer.add_scalar('dis_loss', distil_loss.item(), current_step)
+
                 loss.backward()  # backward pass: computes gradients
                 optimizer.step()  # update weights based on accumulated gradients
 
