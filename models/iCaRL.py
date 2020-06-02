@@ -225,7 +225,7 @@ class iCaRL(MultiTaskLearner):
             # Get predictions
             preds = self.classify(images)
 
-            running_corrects += torch.sum(preds == labels.data).data.item()
+            running_corrects += (preds == labels.numpy()).sum()
 
         # Calculate Accuracy
         accuracy = running_corrects / float(len(eval_loader.dataset))
