@@ -58,6 +58,8 @@ def incremental_train(incremental_learner, split_datasets, optimizer_factory,
         # Evaluate on the groups seen up to this iteration
         test_acc = incremental_learner.eval_task(test_dataloader)
 
+        print('\nTest Accuracy: {}'.format(test_acc))
+
         if log_dir_prefix is not None:
             # Log the test accuracy after training a group
             tb_writer.add_scalar('test accuracy', float(test_acc), idx)
