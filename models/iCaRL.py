@@ -78,7 +78,7 @@ class iCaRL(MultiTaskLearner):
         with torch.no_grad():
             features, class_mean = self._extract_features_and_mean(class_loader)
 
-        self._expand_exemplar_means(class_index, class_mean)
+        self._expand_exemplars_means(class_index, class_mean)
         exemplars_feature_sum = torch.zeros((self.features_extractor.out_dim,))
 
         for k in range(min(self._m, len(features))):
@@ -115,14 +115,14 @@ class iCaRL(MultiTaskLearner):
 
         return l2_normalize(features), l2_normalize(mean)
 
-    def _expand_exemplar_means(self, class_idx, mean):
-        if self.exemplar_means is None:
+    def _expand_exemplars_means(self, class_idx, mean):
+        if self.exemplars_means is None:
             assert class_idx == 0
-            self.exemplar_means = mean[None, ...]
+            self.exemplars_means = mean[None, ...]
         else:
             # Checking if the new class follows the previous ones
-            assert self.exemplar_means.shape[0] == class_idx, (self.exemplar_means.shape, class_idx)
-            self.exemplar_means = torch.cat((self.exemplar_means, mean[None, ...]))
+            assert self.exemplars_means.shape[0] == class_idx, (self.exemplars_means.shape, class_idx)
+            self.exemplars_means = torch.cat((self.exemplars_means, mean[None, ...]))
 
     @property
     def _m(self):
