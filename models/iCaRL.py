@@ -154,9 +154,15 @@ class iCaRL(MultiTaskLearner):
         self.classifier.bias.data[:self.n_classes - n] = bias
 
     def before_task(self, train_loader, val_loader=None):
+        print('n_ known is {}'.format(self.n_known))
         if self.n_known > 0:
+            print(set(train_loader.dataset.targets))
             n = len(set(train_loader.dataset.targets))
             self._add_n_classes(n)
+            self.previous_model = copy.deepcopy(self.features_extractor)
+            self.previous_model.fc = copy.deepcopy(self.classifier)
+            self.previous_model.train(False)
+            print('adding {} classes, total {}'.format(n, self.n_classes))
 
     def train_task(self, train_loader, optimizer, scheduler, num_epochs, val_loader=None, log_dir=None):
         self.to(Config.DEVICE)  # this will bring the network to GPU if DEVICE is cuda
@@ -230,9 +236,6 @@ class iCaRL(MultiTaskLearner):
             self.build_exemplars(class_loader, class_idx)
 
         self.n_known = self.n_classes
-        self.previous_model = copy.deepcopy(self.features_extractor)
-        self.previous_model.fc = copy.deepcopy(self.classifier)
-        self.previous_model.train(False)
 
     def eval_task(self, eval_loader):
         self.to(Config.DEVICE)  # this will bring the network to GPU if DEVICE is cuda
