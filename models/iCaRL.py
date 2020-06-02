@@ -97,7 +97,7 @@ class iCaRL(MultiTaskLearner):
         self.exemplars[class_index] = exemplars
 
     def _extract_features_and_mean(self, dataloader):
-        sum = torch.zeros((self.features_extractor.out_dim,))
+        sum = torch.zeros((self.features_extractor.out_dim,)).to(Config.DEVICE)
         features = []
         qty = 0
 
