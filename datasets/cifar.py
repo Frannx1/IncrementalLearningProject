@@ -64,8 +64,8 @@ class iCIFAR100(CIFAR100):
     def __len__(self):
         return len(self.data)
 
-    def get_class_images(self, label):
-        return self.data[np.array(self.targets) == label]
+    def get_class_indices(self, label):
+        return np.array(self.targets) == label
 
 
 class iCIFARSplit:

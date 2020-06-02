@@ -2,7 +2,7 @@ import numpy as np
 import torch
 from torch import nn
 from torch.backends import cudnn
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
 from tqdm import tqdm
 
 from config import Config
@@ -101,7 +101,7 @@ class iCaRL(MultiTaskLearner):
         features = []
         qty = 0
 
-        for images in dataloader:
+        for images, _ in dataloader:
             images = images.to(Config.DEVICE)
             features.append(self.features_extractor(images))
 
@@ -201,7 +201,9 @@ class iCaRL(MultiTaskLearner):
     def after_task(self, train_loader):
         self.reduce_exemplars()
         for class_idx in set(train_loader.dataset.targets):
-            class_loader = DataLoader(train_loader.dataset.get_class_images(class_idx))
+            idx = train_loader.dataset.get_class_indices(class_idx)
+            class_data = Subset(train_loader.dataset, np.where(idx == 1)[0])
+            class_loader = DataLoader(class_data, batch_size=8, shuffle=True)
             self.build_exemplars(class_loader, class_idx)
 
         self.n_known = self.n_classes
