@@ -1,3 +1,5 @@
+import copy
+
 import numpy as np
 import torch
 from torch import nn
@@ -207,8 +209,8 @@ class iCaRL(MultiTaskLearner):
             self.build_exemplars(class_loader, class_idx)
 
         self.n_known = self.n_classes
-        self.old_model = self.features_extractor.copy().freeze()
-        self.old_model.fc = self.classifier.copy().freeze()
+        self.old_model = copy.deepcopy(self.features_extractor)
+        self.old_model.fc = copy.deepcopy(self.classifier)
 
     def eval_task(self, eval_loader):
         self.to(Config.DEVICE)  # this will bring the network to GPU if DEVICE is cuda
