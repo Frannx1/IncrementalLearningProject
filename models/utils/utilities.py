@@ -50,9 +50,9 @@ def classification_and_distillation_loss(outputs, labels, previous_output=None, 
     if new_idx > 0:
         assert previous_output is not None
         previous_output = previous_output.to(Config.DEVICE)
-        distil_loss = F.binary_cross_entropy_with_logits(
-            input=outputs[..., :new_idx],
-            target=previous_output[..., :new_idx]
+        distil_loss = distillation_loss(
+            logits=outputs[:, :new_idx],
+            old_logits=previous_output[:, :new_idx]
         )
     else:
         # First learning no distillation loss

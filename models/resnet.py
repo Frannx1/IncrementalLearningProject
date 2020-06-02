@@ -165,4 +165,4 @@ def get_resnet(resnet_type="32"):
     elif resnet_type == "56":
         return resnet56()
     else:
-        raise ValueError("TODO")
+        raise ValueError("Not implemented.")
