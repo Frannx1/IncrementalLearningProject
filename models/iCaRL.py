@@ -147,7 +147,6 @@ class iCaRL(MultiTaskLearner):
 
         # TODO: Check initializations
         torch.nn.init.xavier_uniform_(self.classifier.weight)
-        self.classifier.bias.data.fill_(0.01)
 
         self.classifier.weight.data[:self.n_classes - n] = weight
         self.classifier.bias.data[:self.n_classes - n] = bias

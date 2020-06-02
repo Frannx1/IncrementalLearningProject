@@ -46,7 +46,7 @@ def lwf_sequential_train(net, split_datasets, criterion, optimizer_factory,
 
     log_dir = None
     for idx, (train_dataset, test_dataset) in enumerate(split_datasets):
-        print('\nGroup {}/{}. Training on classes: {}'.format(idx, split_datasets.get_total_groups(),
+        print('\nGroup {}/{}. Training on classes: {}'.format(idx+1, split_datasets.get_total_groups(),
                                                               split_datasets.get_train_groups_classes()[idx]))
 
         train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
