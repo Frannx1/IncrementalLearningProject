@@ -41,7 +41,7 @@ class iCaRL(MultiTaskLearner):
         self.exemplars = {}
         self.exemplars_means = None
 
-        self.old_model = None
+        self.previous_model = None
 
     def forward(self, x):
         x = self.features_extractor(x)
@@ -49,8 +49,8 @@ class iCaRL(MultiTaskLearner):
         return x
 
     def classify(self, batch_images):
-        assert self.means is not None
-        assert self.means.shape[0] == self.n_classes
+        assert self.exemplars_means is not None
+        assert self.exemplars_means.shape[0] == self.n_classes
 
         features = self.features_extractor(batch_images)
         features = l2_normalize(features)
@@ -182,8 +182,8 @@ class iCaRL(MultiTaskLearner):
                 outputs = self(images)
 
                 previous_output = None
-                if self.old_model is not None:
-                    previous_output = self.old_model(images)
+                if self.previous_model is not None:
+                    previous_output = self.previous_model(images)
 
                 clf_loss, distil_loss = classification_and_distillation_loss(
                         outputs,
@@ -209,8 +209,9 @@ class iCaRL(MultiTaskLearner):
             self.build_exemplars(class_loader, class_idx)
 
         self.n_known = self.n_classes
-        self.old_model = copy.deepcopy(self.features_extractor)
-        self.old_model.fc = copy.deepcopy(self.classifier)
+        self.previous_model = copy.deepcopy(self.features_extractor)
+        self.previous_model.fc = copy.deepcopy(self.classifier)
+        self.previous_model.train(False)
 
     def eval_task(self, eval_loader):
         self.to(Config.DEVICE)  # this will bring the network to GPU if DEVICE is cuda
