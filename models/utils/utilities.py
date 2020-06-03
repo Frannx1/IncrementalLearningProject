@@ -75,5 +75,10 @@ def class_dist_loss_icarl(outputs, labels, previous_output=None, new_idx=0):
 
     labels_onehot = to_onehot(labels, outputs.shape[1]).to(Config.DEVICE)
 
-    target = torch.cat((torch.sigmoid(previous_output[:, :new_idx]), labels_onehot), dim=1)
+    if new_idx > 0:
+        assert previous_output is not None
+        target = torch.cat((torch.sigmoid(previous_output[:, :new_idx]), labels_onehot), dim=1)
+    else:
+        target = labels_onehot
+
     return criterion(outputs, target)
