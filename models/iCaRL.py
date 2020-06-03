@@ -12,7 +12,8 @@ from config import Config
 from models.incremental_base import MultiTaskLearner
 from models.resnet import get_resnet
 from models.utils import l2_normalize
-from models.utils.utilities import timer, remove_row, classification_and_distillation_loss, to_onehot
+from models.utils.utilities import timer, remove_row, classification_and_distillation_loss, to_onehot, \
+    class_dist_loss_icarl
 
 
 class iCaRL(MultiTaskLearner):
@@ -187,22 +188,19 @@ class iCaRL(MultiTaskLearner):
 
                 optimizer.zero_grad()  # Zero-ing the gradients
 
-                labels_onehot = to_onehot(labels, self.n_classes).to(Config.DEVICE)
-
                 # Forward pass to the network
                 outputs = self(images)
 
                 previous_output = None
                 if self.previous_model is not None:
-                    previous_output = torch.sigmoid(self.previous_model(images))
+                    previous_output = self.previous_model(images)
 
-                clf_loss, distil_loss = classification_and_distillation_loss(
+                loss = class_dist_loss_icarl(
                         outputs,
-                        labels_onehot,
+                        labels,
                         previous_output=previous_output,
                         new_idx=self.n_known
                     )
-                loss = clf_loss + distil_loss
 
                 # Log the information and add to tensorboard
                 if current_step % Config.LOG_FREQUENCY == 0:
@@ -210,14 +208,14 @@ class iCaRL(MultiTaskLearner):
                         _, preds = torch.max(outputs, 1)
                         accuracy = torch.sum(preds == labels) / float(len(labels))
 
-                        print('Epoch: {} \tStep: {} \tLoss: {:.4f} \tAcc: {:.4f}  Class loss: {:.4f}  Dis loss: {:.4f}'
-                              .format(epoch + 1, current_step, loss.item(), accuracy.item(), clf_loss.item(), distil_loss.item()))
+                        print('Epoch: {} \tStep: {} \tLoss: {:.4f} \tAcc: {:.4f}'
+                              .format(epoch + 1, current_step, loss.item(), accuracy.item()))
 
                         if log_dir is not None:
                             tb_writer.add_scalar('loss', loss.item(), current_step)
                             tb_writer.add_scalar('accuracy', accuracy.item(), current_step)
-                            tb_writer.add_scalar('class_loss', clf_loss.item(), current_step)
-                            tb_writer.add_scalar('dis_loss', distil_loss.item(), current_step)
+                            #tb_writer.add_scalar('class_loss', clf_loss.item(), current_step)
+                            #tb_writer.add_scalar('dis_loss', distil_loss.item(), current_step)
 
                 loss.backward()  # backward pass: computes gradients
                 optimizer.step()  # update weights based on accumulated gradients
