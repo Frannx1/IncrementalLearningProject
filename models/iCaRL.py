@@ -154,7 +154,7 @@ class iCaRL(MultiTaskLearner):
         self.classifier.bias.data[:self.n_classes - n] = bias
 
     def before_task(self, train_loader, val_loader=None):
-        print('n_ known is {}'.format(self.n_known))
+        print('n_known is {}'.format(self.n_known))
         if self.n_known > 0:
             print(set(train_loader.dataset.targets))
             n = len(set(train_loader.dataset.targets))
@@ -190,7 +190,7 @@ class iCaRL(MultiTaskLearner):
                 labels_onehot = to_onehot(labels, self.n_classes).to(Config.DEVICE)
 
                 # Forward pass to the network
-                outputs = self(images)
+                outputs = torch.sigmoid(self(images))
 
                 previous_output = None
                 if self.previous_model is not None:

@@ -7,7 +7,7 @@ class Config:
     NUM_CLASSES = 100   # Number of total classes of CIFAR dataset
     NUM_GROUPS = 10     # Number of total groups to split the dataset
 
-    BATCH_SIZE = int(256 / 8)   # Higher batch sizes allows for larger learning rates. An empirical heuristic
+    BATCH_SIZE = int(256 / 4)   # Higher batch sizes allows for larger learning rates. An empirical heuristic
                                 # suggests that, when changing the batch size, learning rate should change by the
                                 # same factor to have comparable results
 
