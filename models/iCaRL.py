@@ -229,7 +229,7 @@ class iCaRL(MultiTaskLearner):
 
     def after_task(self, train_loader):
         self.reduce_exemplars()
-        for class_idx in set(train_loader.dataset.targets):
+        for class_idx in sorted(set(train_loader.dataset.targets)):
             idx = train_loader.dataset.get_class_indices(class_idx)
             class_data = Subset(train_loader.dataset, np.where(idx == 1)[0])
             class_loader = DataLoader(class_data, batch_size=8, shuffle=True)
