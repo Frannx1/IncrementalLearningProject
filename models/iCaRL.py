@@ -190,11 +190,11 @@ class iCaRL(MultiTaskLearner):
                 labels_onehot = to_onehot(labels, self.n_classes).to(Config.DEVICE)
 
                 # Forward pass to the network
-                outputs = torch.sigmoid(self(images))
+                outputs = self(images)
 
                 previous_output = None
                 if self.previous_model is not None:
-                    previous_output = self.previous_model(images)
+                    previous_output = torch.sigmoid(self.previous_model(images))
 
                 clf_loss, distil_loss = classification_and_distillation_loss(
                         outputs,
