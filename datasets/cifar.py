@@ -3,10 +3,8 @@ from torchvision.datasets import CIFAR100
 
 import numpy as np
 
-from datasets.incremental_dataset import IncrementalDataset
 
-
-class iCIFAR100(CIFAR100, IncrementalDataset):
+class iCIFAR100(CIFAR100):
     """ A Dataset containing specified classes from the CIFAR100 dataset.
 
     Args:
@@ -68,10 +66,6 @@ class iCIFAR100(CIFAR100, IncrementalDataset):
 
     def get_class_indices(self, label):
         return np.array(self.targets) == label
-
-    def append(self, data, targets):
-        self.data = np.concatenate((self.data, data), axis=0)
-        self.targets = self.targets + targets
 
 
 class iCIFARSplit:

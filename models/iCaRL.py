@@ -4,11 +4,12 @@ import numpy as np
 import torch
 from torch import nn
 from torch.backends import cudnn
-from torch.utils.data import DataLoader, Subset
+from torch.utils.data import DataLoader, Subset, ConcatDataset
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 from config import Config
+from datasets.common_datasets import SimpleDataset
 from models.incremental_base import MultiTaskLearner
 from models.resnet import get_resnet
 from models.utils import l2_normalize
@@ -85,8 +86,6 @@ class iCaRL(MultiTaskLearner):
         self._expand_exemplars_means(class_index, class_mean)
         exemplars_feature_sum = torch.zeros((self.features_extractor.out_dim,)).to(Config.DEVICE)
 
-        transform = class_loader.dataset.transform
-        class_loader.dataset.transform = None
         for k in range(min(self._m, len(features))):
             # argmin(class_mean - 1/k * (features + exemplars_sum))
             # TODO: checkear porque esta implementacion usa normalizacion_l2 en vez de dividir por k.
@@ -100,7 +99,6 @@ class iCaRL(MultiTaskLearner):
             # TODO: en el paper no quita los features ya agregados.
             features = remove_row(features, idx)
 
-        class_loader.dataset.transform = transform
         self.exemplars[class_index] = exemplars
 
     def _extract_features_and_mean(self, dataloader):
@@ -159,9 +157,11 @@ class iCaRL(MultiTaskLearner):
 
     def combine_training_exemplars(self, train_loader):
         new_train_loader = copy.deepcopy(train_loader)
+        datasets = [new_train_loader.dataset]
         for class_idx in range(len(self.exemplars)):
-            new_train_loader.dataset.append(self.exemplars[class_idx], [class_idx] * self._m)
+            datasets.append(SimpleDataset(self.exemplars[class_idx], [class_idx] * len(self.exemplars[class_idx])))
 
+        new_train_loader.dataset = ConcatDataset(datasets)
         return new_train_loader
 
     def before_task(self, train_loader, val_loader=None):
