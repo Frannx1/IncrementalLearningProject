@@ -156,12 +156,11 @@ class iCaRL(MultiTaskLearner):
         self.classifier.bias.data[:self.n_classes - n] = bias
 
     def combine_training_exemplars(self, train_loader):
-        new_train_loader = copy.deepcopy(train_loader)
-        datasets = [new_train_loader.dataset]
+        datasets = [train_loader.dataset]
         for class_idx in range(len(self.exemplars)):
             datasets.append(SimpleDataset(self.exemplars[class_idx], [class_idx] * len(self.exemplars[class_idx])))
 
-        new_train_loader.dataset = ConcatDataset(datasets)
+        new_train_loader = DataLoader(ConcatDataset(datasets), batch_size=train_loader.batch_size, shuffle=True, num_workers=4)
         return new_train_loader
 
     def before_task(self, train_loader, val_loader=None):
