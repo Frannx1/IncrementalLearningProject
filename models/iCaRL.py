@@ -63,8 +63,8 @@ class iCaRL(MultiTaskLearner):
         pred_labels = []
 
         for feature in features:
-            distances = torch.pow(centers - feature, 2).sum(-1)
-            pred_labels.append(distances.argmin().item())
+            distances = torch.pow(centers - feature, 2).sum(1)
+            pred_labels.append(torch.argmin(distances, dim=1).item())
 
         return torch.from_numpy(np.array(pred_labels))
 
