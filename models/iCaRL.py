@@ -154,6 +154,13 @@ class iCaRL(MultiTaskLearner):
         self.classifier.weight.data[:self.n_classes - n] = weight
         self.classifier.bias.data[:self.n_classes - n] = bias
 
+    def combine_training_exemplars(self, train_loader):
+        new_train_loader = copy.deepcopy(train_loader)
+        for class_idx in range(len(self.exemplars)):
+            new_train_loader.dataset.append(self.exemplars[class_idx], [class_idx] * self._m)
+
+        return new_train_loader
+
     def before_task(self, train_loader, val_loader=None):
         print('n_known is {}'.format(self.n_known))
         if self.n_known > 0:
@@ -175,6 +182,8 @@ class iCaRL(MultiTaskLearner):
             # TensorboardX summary writer
             tb_writer = SummaryWriter(log_dir=log_dir)
 
+        train_exemplars_loader = self.combine_training_exemplars(train_loader)
+
         cudnn.benchmark  # Calling this optimizes runtime
         current_step = 0
         # Start iterating over the epochs
@@ -182,7 +191,7 @@ class iCaRL(MultiTaskLearner):
             print('Starting epoch {}/{}, LR = {}'.format(epoch + 1, num_epochs, scheduler.get_last_lr()))
 
             # Iterate over the dataset
-            for images, labels in train_loader:
+            for images, labels in train_exemplars_loader:
                 # Bring data over the device of choice
                 images = images.to(Config.DEVICE)
                 labels = labels.to(Config.DEVICE)
