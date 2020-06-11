@@ -63,8 +63,8 @@ class iCaRL(MultiTaskLearner):
         pred_labels = []
 
         for feature in features:
-            distances = torch.pow(centers - feature, 2).sum(1)
-            pred_labels.append(torch.argmin(distances, dim=1).item())
+            distances = torch.pow(centers - feature, 2).sum(-1)
+            pred_labels.append(distances.argmin().item())
 
         return torch.from_numpy(np.array(pred_labels))
 
@@ -163,6 +163,9 @@ class iCaRL(MultiTaskLearner):
             self.previous_model = copy.deepcopy(self.features_extractor)
             self.previous_model.fc = copy.deepcopy(self.classifier)
             self.previous_model.train(False)
+            for p in self.previous_model.parameters():
+                p.requires_grad = False
+
             print('adding {} classes, total {}'.format(n, self.n_classes))
 
     def train_task(self, train_loader, optimizer, scheduler, num_epochs, val_loader=None, log_dir=None):
