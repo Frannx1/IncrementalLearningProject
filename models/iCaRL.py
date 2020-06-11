@@ -93,7 +93,7 @@ class iCaRL(MultiTaskLearner):
             idx = self._get_closest_feature(class_mean, features + exemplars_feature_sum)
 
             # The true image has to be saved without any transformation
-            exemplars.append(class_loader.dataset.get_data(idx))
+            exemplars.append(class_loader.dataset.__getitem__(idx)[0])
             exemplars_feature_sum += features[idx]
 
             # TODO: en el paper no quita los features ya agregados.
@@ -242,6 +242,7 @@ class iCaRL(MultiTaskLearner):
         self.reduce_exemplars()
         for class_idx in sorted(set(train_loader.dataset.targets)):
             idx = train_loader.dataset.get_class_indices(class_idx)
+            train_loader.dataset.transform = None
             class_data = Subset(train_loader.dataset, np.where(idx == 1)[0])
             class_loader = DataLoader(class_data, batch_size=8, shuffle=True)
             self.build_exemplars(class_loader, class_idx)
