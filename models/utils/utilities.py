@@ -49,7 +49,7 @@ def classification_and_distillation_loss(outputs, labels, previous_output=None, 
 
     #clf_loss = F.binary_cross_entropy_with_logits(outputs[:, new_idx:], labels_onehot[:, new_idx:])
     criterion = nn.BCEWithLogitsLoss(reduction = 'mean')
-    clf_loss = criterion(outputs[:, new_idx:], labels_onehot)
+    clf_loss = criterion(outputs[:, new_idx:], labels_onehot[:, new_idx:])
 
     if new_idx > 0:
         assert previous_output is not None
