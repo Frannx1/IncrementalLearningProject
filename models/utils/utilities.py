@@ -67,7 +67,7 @@ def classification_and_distillation_loss(outputs, labels, previous_output=None, 
         # First learning no distillation loss
         distil_loss = torch.zeros(1, requires_grad=False).to(Config.DEVICE)
 
-    return clf_loss, distil_loss
+    return clf_loss + distil_loss
 
 
 def class_dist_loss_icarl(outputs, labels, previous_output=None, new_idx=0):

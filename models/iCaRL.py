@@ -207,7 +207,7 @@ class iCaRL(MultiTaskLearner):
                 if self.previous_model is not None:
                     previous_output = self.previous_model(images)
 
-                loss = class_dist_loss_icarl(
+                loss = classification_and_distillation_loss(
                         outputs,
                         labels,
                         previous_output=previous_output,
