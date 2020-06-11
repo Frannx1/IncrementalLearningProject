@@ -73,6 +73,10 @@ class iCIFAR100(CIFAR100, IncrementalDataset):
         self.data = np.concatenate((self.data, data), axis=0)
         self.targets = self.targets + targets
 
+    def get_data(self, index):
+        img = self.data[index]
+        return Image.fromarray(img)
+
 
 class iCIFARSplit:
     """ An iterator that contains the CIFAR100 dataset split in a given number of groups,

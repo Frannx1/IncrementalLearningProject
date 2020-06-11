@@ -13,3 +13,11 @@ class IncrementalDataset(Dataset):
             targets: list of labels
         """
         pass
+
+    @abstractmethod
+    def get_data(self, index):
+        """Returns the data image without any transformation
+        Args:
+            index: the position in the dataset of the image
+        """
+        pass

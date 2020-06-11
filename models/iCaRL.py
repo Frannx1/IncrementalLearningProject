@@ -92,7 +92,8 @@ class iCaRL(MultiTaskLearner):
             #       exemplars_feature_mean. Porque el paper ademas hace features / k?
             idx = self._get_closest_feature(class_mean, features + exemplars_feature_sum)
 
-            exemplars.append(class_loader.dataset.__getitem__(idx))
+            # The true image has to be saved without any transformation
+            exemplars.append(class_loader.dataset.get_data(idx))
             exemplars_feature_sum += features[idx]
 
             # TODO: en el paper no quita los features ya agregados.
