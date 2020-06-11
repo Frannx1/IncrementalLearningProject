@@ -85,6 +85,8 @@ class iCaRL(MultiTaskLearner):
         self._expand_exemplars_means(class_index, class_mean)
         exemplars_feature_sum = torch.zeros((self.features_extractor.out_dim,)).to(Config.DEVICE)
 
+        transform = class_loader.dataset.transform
+        class_loader.dataset.transform = None
         for k in range(min(self._m, len(features))):
             # argmin(class_mean - 1/k * (features + exemplars_sum))
             # TODO: checkear porque esta implementacion usa normalizacion_l2 en vez de dividir por k.
@@ -92,13 +94,13 @@ class iCaRL(MultiTaskLearner):
             #       exemplars_feature_mean. Porque el paper ademas hace features / k?
             idx = self._get_closest_feature(class_mean, features + exemplars_feature_sum)
 
-            # The true image has to be saved without any transformation
             exemplars.append(class_loader.dataset.__getitem__(idx)[0])
             exemplars_feature_sum += features[idx]
 
             # TODO: en el paper no quita los features ya agregados.
             features = remove_row(features, idx)
 
+        class_loader.dataset.transform = transform
         self.exemplars[class_index] = exemplars
 
     def _extract_features_and_mean(self, dataloader):
@@ -242,7 +244,6 @@ class iCaRL(MultiTaskLearner):
         self.reduce_exemplars()
         for class_idx in sorted(set(train_loader.dataset.targets)):
             idx = train_loader.dataset.get_class_indices(class_idx)
-            train_loader.dataset.transform = None
             class_data = Subset(train_loader.dataset, np.where(idx == 1)[0])
             class_loader = DataLoader(class_data, batch_size=8, shuffle=True)
             self.build_exemplars(class_loader, class_idx)
