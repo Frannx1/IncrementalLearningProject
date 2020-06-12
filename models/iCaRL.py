@@ -160,7 +160,8 @@ class iCaRL(MultiTaskLearner):
         for class_idx in range(len(self.exemplars)):
             datasets.append(SimpleDataset(self.exemplars[class_idx], [class_idx] * len(self.exemplars[class_idx])))
 
-        new_train_loader = DataLoader(ConcatDataset(datasets), batch_size=train_loader.batch_size, shuffle=True, num_workers=4)
+        new_train_loader = DataLoader(ConcatDataset(datasets), batch_size=train_loader.batch_size,
+                                      shuffle=True, num_workers=4)
         return new_train_loader
 
     def before_task(self, train_loader, val_loader=None):
@@ -172,8 +173,6 @@ class iCaRL(MultiTaskLearner):
             self.previous_model = copy.deepcopy(self.features_extractor)
             self.previous_model.fc = copy.deepcopy(self.classifier)
             self.previous_model.train(False)
-            for p in self.previous_model.parameters():
-                p.requires_grad = False
 
             print('adding {} classes, total {}'.format(n, self.n_classes))
 
@@ -209,7 +208,7 @@ class iCaRL(MultiTaskLearner):
                 if self.previous_model is not None:
                     previous_output = self.previous_model(images)
 
-                loss = classification_and_distillation_loss(
+                loss = class_dist_loss_icarl(
                         outputs,
                         labels,
                         previous_output=previous_output,
