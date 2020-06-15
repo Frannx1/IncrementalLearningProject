@@ -265,3 +265,24 @@ class iCaRL(MultiTaskLearner):
         # Calculate Accuracy
         accuracy = running_corrects / float(len(eval_loader.dataset))
         return accuracy
+
+    def eval_hybrid1(self, eval_loader):
+        self.to(Config.DEVICE)  # this will bring the network to GPU if DEVICE is cuda
+        self.train(False)  # Set Network to evaluation mode
+
+        running_corrects = 0
+        for images, labels in tqdm(eval_loader):
+            images = images.to(Config.DEVICE)
+            labels = labels.to(Config.DEVICE)
+
+            class_pred = self(images)
+
+            # Get predictions
+            _, preds = torch.max(class_pred.data, 1)
+
+            # Update Corrects
+            running_corrects += torch.sum(preds == labels.data).data.item()
+
+        # Calculate Accuracy
+        accuracy = running_corrects / float(len(eval_loader.dataset))
+        return accuracy
