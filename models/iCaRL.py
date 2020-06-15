@@ -95,7 +95,7 @@ class iCaRL(MultiTaskLearner):
 
             exemplars.append(class_loader.dataset.__getitem__(idx)[0])
             exemplars_feature_sum += features[idx]
-            print(idx)
+            print('i: {}, idx: {}, len: {}'.format(k, idx, len(features)))
             print(features[idx])
 
             # TODO: en el paper no quita los features ya agregados.
