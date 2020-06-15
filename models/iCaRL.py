@@ -95,6 +95,8 @@ class iCaRL(MultiTaskLearner):
 
             exemplars.append(class_loader.dataset.__getitem__(idx)[0])
             exemplars_feature_sum += features[idx]
+            print(idx)
+            print(features)
 
             # TODO: en el paper no quita los features ya agregados.
             features = remove_row(features, idx)
@@ -243,7 +245,7 @@ class iCaRL(MultiTaskLearner):
         for class_idx in sorted(set(train_loader.dataset.targets)):
             idx = train_loader.dataset.get_class_indices(class_idx)
             class_data = Subset(train_loader.dataset, np.where(idx == 1)[0])
-            class_loader = DataLoader(class_data, batch_size=8, shuffle=True)
+            class_loader = DataLoader(class_data, batch_size=8, shuffle=False)
             self.build_exemplars(class_loader, class_idx)
 
         self.n_known = self.n_classes
