@@ -82,3 +82,21 @@ def class_dist_loss_icarl(outputs, labels, previous_output=None, new_idx=0):
         target = labels_onehot
 
     return criterion(outputs, target)
+
+
+class ReverseIdxSorted:
+
+    def __init__(self, length):
+        self.item_list = [x for x in range(length)]
+
+    def __getitem__(self, index):
+        # Returns the true index of a list in
+        # which some of its elements were removed.
+        # Every time an item is got, it
+        # is considered as removed
+
+        item = self.item_list[index]
+        self.item_list.remove(item)
+
+        return item
+

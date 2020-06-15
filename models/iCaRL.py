@@ -14,7 +14,7 @@ from models.incremental_base import MultiTaskLearner
 from models.resnet import get_resnet
 from models.utils import l2_normalize
 from models.utils.utilities import timer, remove_row, classification_and_distillation_loss, to_onehot, \
-    class_dist_loss_icarl
+    class_dist_loss_icarl, ReverseIdxSorted
 
 
 class iCaRL(MultiTaskLearner):
@@ -85,6 +85,7 @@ class iCaRL(MultiTaskLearner):
 
         self._expand_exemplars_means(class_index, class_mean)
         exemplars_feature_sum = torch.zeros((self.features_extractor.out_dim,)).to(Config.DEVICE)
+        reverse_index = ReverseIdxSorted(len(features))
 
         for k in range(min(self._m, len(features))):
             # argmin(class_mean - 1/k * (features + exemplars_sum))
@@ -92,11 +93,11 @@ class iCaRL(MultiTaskLearner):
             #       Se entiende que al hacer (exemplars_feature_sum / k) daria como resultado
             #       exemplars_feature_mean. Porque el paper ademas hace features / k?
             idx = self._get_closest_feature(class_mean, features + exemplars_feature_sum)
+            true_idx = reverse_index[idx]
 
-            exemplars.append(class_loader.dataset.__getitem__(idx)[0])
+            exemplars.append(class_loader.dataset[true_idx][0])
             exemplars_feature_sum += features[idx]
-            print('i: {}, idx: {}, len: {}'.format(k, idx, len(features)))
-            print(features[idx])
+            print('i: {}, idx: {}, true idx: {}, len: {}'.format(k, idx, true_idx, len(features)))
 
             # TODO: en el paper no quita los features ya agregados.
             features = remove_row(features, idx)
