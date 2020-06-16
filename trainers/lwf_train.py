@@ -17,7 +17,8 @@ def lwf_train_model(net, train_dataloader, criterion, optimizer, scheduler, num_
     # By default, everything is loaded to cpu
     net = net.to(Config.DEVICE)  # this will bring the network to GPU if DEVICE is cuda
 
-    if previous_model is not None:
+    if n_known_classes > 0:
+        assert previous_model is not None
         previous_model = previous_model.to(Config.DEVICE)
         previous_model.train(False)
 
@@ -58,7 +59,6 @@ def lwf_train_model(net, train_dataloader, criterion, optimizer, scheduler, num_
             #loss = criterion(outputs, labels)
 
             if n_known_classes > 0:
-                assert previous_model is not None
                 previous_outputs = torch.sigmoid(previous_model(images))
 
                 # Compute the teaching loss and the distillation loss

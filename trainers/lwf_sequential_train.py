@@ -63,11 +63,10 @@ def lwf_sequential_train(net, split_datasets, criterion, optimizer_factory,
             in_features = net.fc.in_features
             out_features = net.fc.out_features
             weight = net.fc.weight.data
-            bias = net.fc.bias.data
 
-            net.fc = nn.Linear(in_features, n_classes)
+            net.fc = nn.Linear(in_features, n_classes, bias=False)
             net.fc.weight.data[:out_features] = weight
-            net.fc.bias.data[:out_features] = bias
+
             previous_model = copy.deepcopy(net)
             previous_model.train(False)
 
