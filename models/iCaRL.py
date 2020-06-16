@@ -84,7 +84,7 @@ class iCaRL(MultiTaskLearner):
         self.features_extractor.train(False)
 
         features = self.features_extractor(batch_images)
-        # features = l2_normalize(features)
+        # normalized_features = l2_normalize(features)
         normalized_features = []
         for feature in features:
             normalized_features.append(l2_normalize(feature))
@@ -136,6 +136,7 @@ class iCaRL(MultiTaskLearner):
 
         self.exemplars[class_index] = exemplars
 
+    """
     def _extract_features_and_mean(self, dataloader):
         features = []
 
@@ -152,8 +153,8 @@ class iCaRL(MultiTaskLearner):
         mean = mean / np.linalg.norm(mean.cpu())  # Normalize
 
         return features, mean
-
     """
+
     def _extract_features_and_mean(self, dataloader):
         sum = torch.zeros((self.features_extractor.out_dim,)).to(Config.DEVICE)
         features = []
@@ -172,7 +173,6 @@ class iCaRL(MultiTaskLearner):
         features = torch.cat(features)
 
         return l2_normalize(features), l2_normalize(mean)
-    """
 
     def _expand_exemplars_means(self, class_idx, mean):
         if self.exemplars_means is None:
@@ -182,7 +182,6 @@ class iCaRL(MultiTaskLearner):
             # Checking if the new class follows the previous ones
             assert self.exemplars_means.shape[0] == class_idx, (self.exemplars_means.shape, class_idx)
             self.exemplars_means = torch.cat((self.exemplars_means, mean[None, ...]))
-
     @property
     def _m(self):
         """Returns the number of exemplars per class."""

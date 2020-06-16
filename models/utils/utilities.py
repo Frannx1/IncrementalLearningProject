@@ -48,7 +48,7 @@ def classification_and_distillation_loss(outputs, labels, previous_output=None, 
     labels_onehot = to_onehot(labels, outputs.shape[1]).to(Config.DEVICE)
 
     #clf_loss = F.binary_cross_entropy_with_logits(outputs[:, new_idx:], labels_onehot[:, new_idx:])
-    criterion = nn.BCEWithLogitsLoss(reduction = 'mean')
+    criterion = nn.BCEWithLogitsLoss(reduction='mean')
     clf_loss = criterion(outputs[:, new_idx:], labels_onehot[:, new_idx:])
 
     if new_idx > 0:
@@ -71,7 +71,7 @@ def classification_and_distillation_loss(outputs, labels, previous_output=None, 
 
 
 def class_dist_loss_icarl(outputs, labels, previous_output=None, new_idx=0):
-    criterion = nn.BCEWithLogitsLoss(reduction = 'mean')
+    criterion = nn.BCEWithLogitsLoss(reduction='mean')
 
     labels_onehot = to_onehot(labels, outputs.shape[1]).to(Config.DEVICE)
 
