@@ -55,12 +55,41 @@ class iCaRL(MultiTaskLearner):
         assert self.exemplars_means is not None
         assert self.exemplars_means.shape[0] == self.n_classes
 
+        self.features_extractor.train(False)
+
+        features = self.features_extractor(batch_images)
+        return self._nearest_prototype(self.exemplars_means, features)
+
+    @staticmethod
+    def _nearest_prototype(centers, features):
+        batch_size = features.size(0)
+        centers = torch.stack([centers] * batch_size)   # (batch_size, n_classes, feature_size)
+        centers = centers.transpose(1, 2)   # (batch_size, feature_size, n_classes)
+
+        normalized_features = []
+        for feature in features:
+            normalized_features.append(l2_normalize(feature))
+        normalized_features = torch.stack(normalized_features, dim=0)
+        normalized_features = normalized_features.unsqueeze(2)  # (batch_size, feature_size, 1)
+        normalized_features = normalized_features.expand_as(centers)    # (batch_size, feature_size, n_classes)
+
+        preds = torch.argmin((normalized_features - centers).pow(2).sum(1), dim=1)
+        return preds
+
+    """
+    def classify(self, batch_images):
+        assert self.exemplars_means is not None
+        assert self.exemplars_means.shape[0] == self.n_classes
+
+        self.features_extractor.train(False)
+
         features = self.features_extractor(batch_images)
         # features = l2_normalize(features)
         normalized_features = []
         for feature in features:
             normalized_features.append(l2_normalize(feature))
-        normalized_features = torch.stack(normalized_features)
+        normalized_features = torch.stack(normalized_features, dim=0)
+
         return self._nearest_prototype(self.exemplars_means, normalized_features)
 
     @staticmethod
@@ -72,6 +101,7 @@ class iCaRL(MultiTaskLearner):
             pred_labels.append(distances.argmin().item())
 
         return torch.from_numpy(np.array(pred_labels))
+    """
 
     @staticmethod
     def _get_closest_feature(center, features):
