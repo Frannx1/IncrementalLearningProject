@@ -56,7 +56,7 @@ class iCaRL(MultiTaskLearner):
         assert self.exemplars_means.shape[0] == self.n_classes
 
         features = self.features_extractor(batch_images)
-        #features = l2_normalize(features)
+        # features = l2_normalize(features)
         normalized_features = []
         for feature in features:
             normalized_features.append(l2_normalize(feature))
