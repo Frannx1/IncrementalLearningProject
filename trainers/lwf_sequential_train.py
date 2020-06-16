@@ -59,14 +59,13 @@ def lwf_sequential_train(net, split_datasets, criterion, optimizer_factory,
 
         if n_known_classes > 0:
             # Update network fc layer with more outputs
-            """            
             in_features = net.fc.in_features
             out_features = net.fc.out_features
             weight = net.fc.weight.data
 
             net.fc = nn.Linear(in_features, n_classes, bias=False)
             net.fc.weight.data[:out_features] = weight
-            """
+
             previous_model = copy.deepcopy(net)
             previous_model.train(False)
 
