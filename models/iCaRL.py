@@ -138,6 +138,24 @@ class iCaRL(MultiTaskLearner):
         self.exemplars[class_index] = exemplars
 
     def _extract_features_and_mean(self, dataloader):
+        features = []
+
+        for images, _ in dataloader:
+            images = images.to(Config.DEVICE)
+            feature = self.features_extractor(images)
+
+            feature = feature / np.linalg.norm(feature.cpu())  # Normalize
+
+            features.append(feature)
+
+        features = torch.cat(features)
+        mean = features.mean(0)
+        mean = mean / np.linalg.norm(mean.cpu())  # Normalize
+
+        return features, mean
+
+    """
+    def _extract_features_and_mean(self, dataloader):
         sum = torch.zeros((self.features_extractor.out_dim,)).to(Config.DEVICE)
         features = []
         qty = 0
@@ -155,6 +173,7 @@ class iCaRL(MultiTaskLearner):
         features = torch.cat(features)
 
         return l2_normalize(features), l2_normalize(mean)
+    """
 
     def _expand_exemplars_means(self, class_idx, mean):
         if self.exemplars_means is None:
