@@ -56,8 +56,12 @@ class iCaRL(MultiTaskLearner):
         assert self.exemplars_means.shape[0] == self.n_classes
 
         features = self.features_extractor(batch_images)
-        features = l2_normalize(features)
-        return self._nearest_prototype(self.exemplars_means, features)
+        #features = l2_normalize(features)
+        normalized_features = []
+        for feature in features:
+            normalized_features.append(l2_normalize(feature))
+        normalized_features = torch.stack(normalized_features)
+        return self._nearest_prototype(self.exemplars_means, normalized_features)
 
     @staticmethod
     def _nearest_prototype(centers, features):
@@ -97,7 +101,6 @@ class iCaRL(MultiTaskLearner):
 
             exemplars.append(class_loader.dataset[true_idx][0])
             exemplars_feature_sum += features[idx]
-            print('i: {}, idx: {}, true idx: {}, len: {}'.format(k, idx, true_idx, len(features)))
 
             # TODO: en el paper no quita los features ya agregados.
             features = remove_row(features, idx)
