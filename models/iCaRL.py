@@ -298,7 +298,7 @@ class iCaRL(MultiTaskLearner):
         for class_idx in sorted(set(train_loader.dataset.targets)):
             idx = train_loader.dataset.get_class_indices(class_idx)
             class_data = Subset(train_loader.dataset, np.where(idx == 1)[0])
-            class_loader = DataLoader(class_data, batch_size=8, shuffle=False)
+            class_loader = DataLoader(class_data, batch_size=1, shuffle=False)
             self.build_exemplars(class_loader, class_idx)
 
         self.n_known = self.n_classes
