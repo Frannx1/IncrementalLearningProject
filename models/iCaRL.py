@@ -223,11 +223,13 @@ class iCaRL(MultiTaskLearner):
         print('n_known is {}'.format(self.n_known))
         if self.n_known > 0:
             print(set(train_loader.dataset.targets))
+            n = len(set(train_loader.dataset.targets))
+            self._add_n_classes(n)
             self.previous_model = copy.deepcopy(self.features_extractor)
             self.previous_model.fc = copy.deepcopy(self.classifier)
             self.previous_model.train(False)
-            n = len(set(train_loader.dataset.targets))
-            self._add_n_classes(n)
+            for param in self.previous_model.parameters():
+                param.requires_grad = False
 
             print('adding {} classes, total {}'.format(n, self.n_classes))
 

@@ -17,5 +17,5 @@ class OptimizerFactory(ABC):
 class SDGOptimizerAllFactory(OptimizerFactory):
 
     def create_optimizer(self, net):
-        return optim.SGD(net.parameters(), *self.args, **self.kwargs)
+        return optim.SGD(filter(lambda p: p.requires_grad, net.parameters()), *self.args, **self.kwargs)
 
