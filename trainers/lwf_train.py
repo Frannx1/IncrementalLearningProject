@@ -1,12 +1,15 @@
 import os
 
 import torch
+from torch import nn
 from torch.backends import cudnn
 from torch.utils.tensorboard import SummaryWriter
 
 from config import Config
 
 from torch.nn import functional as F
+
+from models.utils.utilities import to_onehot
 
 
 def lwf_train_model(net, train_dataloader, criterion, optimizer, scheduler, num_epochs, n_known_classes, log_dir=None,
@@ -42,25 +45,33 @@ def lwf_train_model(net, train_dataloader, criterion, optimizer, scheduler, num_
 
             net.train()  # Sets module in training mode
 
-            if previous_model is not None:
-                previous_outputs = previous_model(images)
-
             # Zero-ing the gradients
             optimizer.zero_grad()
 
             # Forward pass to the network
             outputs = net(images)
+            labels_onehot = to_onehot(labels, outputs.shape[1]).to(Config.DEVICE)
+            criterion_class = nn.BCEWithLogitsLoss(reduction='mean')
+            loss = criterion_class(outputs[:, n_known_classes:], labels_onehot[:, n_known_classes:])
 
             # Compute loss based on output and ground truth
-            loss = criterion(outputs, labels)
+            #loss = criterion(outputs, labels)
 
             if n_known_classes > 0:
+                assert previous_model is not None
+                previous_outputs = torch.sigmoid(previous_model(images))
+
                 # Compute the teaching loss and the distillation loss
+                criterion_diss = nn.BCEWithLogitsLoss(reduction='mean')
+                distil_loss = criterion_diss(outputs[:, :n_known_classes], previous_outputs[:, :n_known_classes])
+                loss += distil_loss
+                """
                 prev_softmax = F.softmax(previous_outputs, dim=1)
                 log_softmax = F.log_softmax(outputs[:, :n_known_classes], dim=1)
                 S = torch.sum(prev_softmax * log_softmax, axis=1)
 
                 loss -= torch.mean(S, axis=0).data
+                """
 
             if current_step % Config.LOG_FREQUENCY == 0:
                 # Log the information and add to tensorboard

@@ -42,6 +42,7 @@ def lwf_sequential_train(net, split_datasets, criterion, optimizer_factory,
         tb_writer = SummaryWriter(log_dir=log_dir_prefix)
 
     n_known_classes = 0
+    n_classes = net.fc.out_features
     previous_model = None
 
     log_dir = None
@@ -54,6 +55,16 @@ def lwf_sequential_train(net, split_datasets, criterion, optimizer_factory,
 
         if log_dir_prefix is not None:
             log_dir = os.path.join(log_dir_prefix, 'group_' + str(idx))
+
+        if n_known_classes == n_classes:
+            # Update network fc layer with more outputs
+            n = len(set(train_dataloader.dataset.targets))
+            n_classes += n
+            in_features = net.fc.in_features
+            out_features = net.fc.out_features
+            weight = net.fc.weight.data
+            net.fc = nn.Linear(in_features, n_classes)
+            net.fc.weight.data[:out_features] = weight
 
         optimizer = optimizer_factory.create_optimizer(net)
         scheduler = scheduler_factory.create_scheduler(optimizer)
@@ -69,14 +80,6 @@ def lwf_sequential_train(net, split_datasets, criterion, optimizer_factory,
             # Log the test accuracy after training a group
             tb_writer.add_scalar('test accuracy', float(test_acc), idx)
 
-        n_known_classes += split_datasets.get_total_groups()
+        n_known_classes = n_classes
 
         previous_model = copy.deepcopy(net)
-
-        # Update network fc layer with more outputs
-        in_features = net.fc.in_features
-        out_features = net.fc.out_features
-        weight = net.fc.weight.data
-        new_out_features = n_known_classes+split_datasets.get_total_groups()
-        net.fc = nn.Linear(in_features, new_out_features)
-        net.fc.weight.data[:out_features] = weight

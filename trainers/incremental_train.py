@@ -45,11 +45,11 @@ def incremental_train(incremental_learner, split_datasets, optimizer_factory,
         if log_dir_prefix is not None:
             log_dir = os.path.join(log_dir_prefix, 'group_' + str(idx))
 
-        optimizer = optimizer_factory.create_optimizer(incremental_learner)
-        scheduler = scheduler_factory.create_scheduler(optimizer)
-
         # Train on the current group
         incremental_learner.before_task(train_dataloader)
+
+        optimizer = optimizer_factory.create_optimizer(incremental_learner)
+        scheduler = scheduler_factory.create_scheduler(optimizer)
 
         incremental_learner.train_task(train_dataloader, optimizer, scheduler, num_epochs, log_dir=log_dir)
 
