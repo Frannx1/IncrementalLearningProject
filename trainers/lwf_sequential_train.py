@@ -6,6 +6,7 @@ from torch import nn
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
+from config import Config
 from trainers.lwf_train import lwf_train_model
 from trainers.train_once import test_model
 
@@ -49,9 +50,10 @@ def lwf_sequential_train(net, split_datasets, criterion, optimizer_factory,
         print('\nGroup {}/{}. Training on classes: {}'.format(idx+1, split_datasets.get_total_groups(),
                                                               split_datasets.get_train_groups_classes()[idx]))
 
-        train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
-        test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
-        n = len(set(train_dataloader.dataset.targets))
+        train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=Config.NUM_WORKERS)
+        test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True, num_workers=Config.NUM_WORKERS)
+
+        n = len(set(split_datasets.get_train_groups_classes()[idx]))
         n_classes += n
 
         if log_dir_prefix is not None:

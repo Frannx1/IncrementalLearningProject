@@ -4,12 +4,13 @@ class Config:
 
     DEVICE = 'cpu'     # 'cuda' or 'cpu'
 
-    NUM_CLASSES = 100   # Number of total classes of CIFAR dataset
-    NUM_GROUPS = 10     # Number of total groups to split the dataset
+    NUM_CLASSES = 10   # Number of total classes of CIFAR dataset
+    NUM_GROUPS = 5     # Number of total groups to split the dataset
 
     BATCH_SIZE = int(256 / 4)   # Higher batch sizes allows for larger learning rates. An empirical heuristic
                                 # suggests that, when changing the batch size, learning rate should change by the
                                 # same factor to have comparable results
+    NUM_WORKERS = 0
 
     LR = 1e-3            # The initial Learning Rate
     MOMENTUM = 0.9       # Hyperparameter for SGD, keep this at 0.9 when using SGD

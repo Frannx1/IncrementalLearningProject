@@ -4,6 +4,7 @@ from datetime import datetime
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
+from config import Config
 from trainers.train_once import train_model, test_model
 
 
@@ -41,8 +42,8 @@ def sequential_train(net, split_datasets, criterion, optimizer_factory,
         print('\nGroup {}/{}. Training on classes: {}'.format(idx+1, split_datasets.get_total_groups(),
                                                               split_datasets.get_train_groups_classes()[idx]))
 
-        train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
-        test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
+        train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=Config.NUM_WORKERS)
+        test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True, num_workers=Config.NUM_WORKERS)
 
         if log_dir_prefix is not None:
             log_dir = os.path.join(log_dir_prefix, 'group_' + str(idx))

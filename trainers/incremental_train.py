@@ -4,6 +4,8 @@ from datetime import datetime
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
+from config import Config
+
 
 def incremental_train(incremental_learner, split_datasets, optimizer_factory,
                       scheduler_factory, batch_size=128, num_epochs=10,
@@ -39,21 +41,22 @@ def incremental_train(incremental_learner, split_datasets, optimizer_factory,
         print('\nGroup {}/{}. Training on classes: {}'.format(idx+1, split_datasets.get_total_groups(),
                                                               split_datasets.get_train_groups_classes()[idx]))
 
-        train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
-        test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
+        train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=Config.NUM_WORKERS)
+        test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True, num_workers=Config.NUM_WORKERS)
+        targets = split_datasets.get_train_groups_classes()[idx]
 
         if log_dir_prefix is not None:
             log_dir = os.path.join(log_dir_prefix, 'group_' + str(idx))
 
         # Train on the current group
-        incremental_learner.before_task(train_dataloader)
+        incremental_learner.before_task(train_dataloader, targets=targets)
 
         optimizer = optimizer_factory.create_optimizer(incremental_learner)
         scheduler = scheduler_factory.create_scheduler(optimizer)
 
         incremental_learner.train_task(train_dataloader, optimizer, scheduler, num_epochs, log_dir=log_dir)
 
-        incremental_learner.after_task(train_dataloader)
+        incremental_learner.after_task(train_dataloader, targets=targets)
 
         # Evaluate on the groups seen up to this iteration
         test_acc = incremental_learner.eval_task(test_dataloader)

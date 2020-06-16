@@ -1,4 +1,5 @@
 from PIL import Image
+from torch.utils.data import Subset
 from torchvision.datasets import CIFAR100
 
 import numpy as np
@@ -65,7 +66,11 @@ class iCIFAR100(CIFAR100):
         return len(self.data)
 
     def get_class_indices(self, label):
-        return np.array(self.targets) == label
+        idx = np.array(self.targets) == label
+        return np.where(idx == 1)[0]
+
+    def get_classes_indices(self, labels):
+        return[i for i, val in enumerate(self.targets) if val in labels]
 
 
 class iCIFARSplit:
@@ -96,17 +101,20 @@ class iCIFARSplit:
         self.train_groups_classes = {}
         self.current_iter = -1
 
+        self.dataset_train = iCIFAR100(transform=train_transform)
+        self.dataset_test = iCIFAR100(transform=test_transform, download=False)
+
         for group_idx in range(total_groups):
             first_class = int(group_idx * self.class_per_group)
             last_class = int((group_idx + 1) * self.class_per_group)
             range_classes = range(first_class, last_class)
-            download = group_idx == 0
 
             self.train_groups_classes[group_idx] = range_classes
-            self.train_groups.append(iCIFAR100(transform=train_transform, classes=range_classes,
-                                               download=download))
-            self.test_groups.append(iCIFAR100(transform=test_transform, train=False,
-                                              classes=range(last_class), download=False))
+            idx_train = self.dataset_train.get_classes_indices(range_classes)
+            self.train_groups.append(Subset(self.dataset_train, idx_train))
+
+            idx_test = self.dataset_test.get_classes_indices(range(last_class))
+            self.test_groups.append(Subset(self.dataset_test, idx_test))
 
     def get_train_group(self, i):
         return self.train_groups[i]

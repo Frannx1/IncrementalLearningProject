@@ -14,14 +14,14 @@ class MultiTaskLearner(nn.Module):
     Reference: https://github.com/AfricanxAdmiral/icarl/blob/master/inclearn/models/base.py
     """
 
-    def before_task(self, train_loader, val_loader):
+    def before_task(self, train_loader, targets, val_loader):
         pass
 
     @abstractmethod
     def train_task(self, train_loader, optimizer, scheduler, num_epochs, val_loader=None, log_dir=None):
         pass
 
-    def after_task(self, train_loader):
+    def after_task(self, train_loader, targets):
         pass
 
     @abstractmethod

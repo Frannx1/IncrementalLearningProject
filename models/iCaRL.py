@@ -214,15 +214,14 @@ class iCaRL(MultiTaskLearner):
             datasets.append(SimpleDataset(self.exemplars[class_idx], [class_idx] * len(self.exemplars[class_idx])))
 
         new_train_loader = DataLoader(ConcatDataset(datasets), batch_size=train_loader.batch_size,
-                                      shuffle=True, num_workers=4)
+                                      shuffle=True, num_workers=Config.NUM_WORKERS)
         return new_train_loader
 
-    def before_task(self, train_loader, val_loader=None):
-        print('n_known is {}'.format(self.n_known))
+    def before_task(self, train_loader, targets, val_loader=None):
         if self.n_known > 0:
-            print(set(train_loader.dataset.targets))
-            n = len(set(train_loader.dataset.targets))
+            n = len(set(targets))
             self._add_n_classes(n)
+
             self.previous_model = copy.deepcopy(self.features_extractor)
             self.previous_model.fc = copy.deepcopy(self.classifier)
             self.previous_model.train(False)
@@ -293,12 +292,12 @@ class iCaRL(MultiTaskLearner):
             # Step the scheduler
             scheduler.step()
 
-    def after_task(self, train_loader):
+    def after_task(self, train_loader, targets):
         self.reduce_exemplars()
-        for class_idx in sorted(set(train_loader.dataset.targets)):
-            idx = train_loader.dataset.get_class_indices(class_idx)
-            class_data = Subset(train_loader.dataset, np.where(idx == 1)[0])
-            class_loader = DataLoader(class_data, batch_size=1, shuffle=False)
+        for class_idx in sorted(set(targets)):
+            indices = train_loader.dataset.get_class_indices(class_idx)
+            class_data = Subset(train_loader.dataset, indices)
+            class_loader = DataLoader(class_data, batch_size=Config.BATCH_SIZE, shuffle=False)
             self.build_exemplars(class_loader, class_idx)
 
         self.n_known = self.n_classes
