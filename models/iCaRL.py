@@ -50,7 +50,7 @@ class iCaRL(MultiTaskLearner):
         x = self.features_extractor(x)
         x = self.classifier(x)
         return x
-
+    """
     def classify(self, batch_images):
         assert self.exemplars_means is not None
         assert self.exemplars_means.shape[0] == self.n_classes
@@ -101,7 +101,6 @@ class iCaRL(MultiTaskLearner):
             pred_labels.append(distances.argmin().item())
 
         return torch.from_numpy(np.array(pred_labels))
-    """
 
     @staticmethod
     def _get_closest_feature(center, features):
