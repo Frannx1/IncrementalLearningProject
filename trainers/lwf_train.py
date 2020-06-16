@@ -12,8 +12,8 @@ from torch.nn import functional as F
 from models.utils.utilities import to_onehot
 
 
-def lwf_train_model(net, train_dataloader, criterion, optimizer, scheduler, num_epochs, n_known_classes, log_dir=None,
-                    previous_model=None):
+def lwf_train_model(net, train_dataloader, criterion, optimizer, scheduler, num_epochs, n_known_classes, n_classes,
+                    log_dir=None, previous_model=None):
     # By default, everything is loaded to cpu
     net = net.to(Config.DEVICE)  # this will bring the network to GPU if DEVICE is cuda
 
@@ -53,7 +53,7 @@ def lwf_train_model(net, train_dataloader, criterion, optimizer, scheduler, num_
             outputs = net(images)
             labels_onehot = to_onehot(labels, outputs.shape[1]).to(Config.DEVICE)
             criterion_class = nn.BCEWithLogitsLoss(reduction='mean')
-            loss = criterion_class(outputs[:, n_known_classes:], labels_onehot[:, n_known_classes:])
+            loss = criterion_class(outputs[:, n_known_classes:n_classes], labels_onehot[:, n_known_classes:n_classes])
 
             # Compute loss based on output and ground truth
             #loss = criterion(outputs, labels)

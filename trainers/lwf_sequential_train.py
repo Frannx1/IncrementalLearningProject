@@ -41,8 +41,7 @@ def lwf_sequential_train(net, split_datasets, criterion, optimizer_factory,
         log_dir_prefix = os.path.join(log_dir_prefix, now.strftime('%m-%d %H:%M:%S'))
         tb_writer = SummaryWriter(log_dir=log_dir_prefix)
 
-    n_known_classes = 0
-    n_classes = net.fc.out_features
+    n_known_classes, n_classes = 0, 0
     previous_model = None
 
     log_dir = None
@@ -52,14 +51,14 @@ def lwf_sequential_train(net, split_datasets, criterion, optimizer_factory,
 
         train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
         test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
+        n = len(set(train_dataloader.dataset.targets))
+        n_classes += n
 
         if log_dir_prefix is not None:
             log_dir = os.path.join(log_dir_prefix, 'group_' + str(idx))
 
         if n_known_classes > 0:
             # Update network fc layer with more outputs
-            n = len(set(train_dataloader.dataset.targets))
-            n_classes += n
             """            
             in_features = net.fc.in_features
             out_features = net.fc.out_features
@@ -75,7 +74,7 @@ def lwf_sequential_train(net, split_datasets, criterion, optimizer_factory,
         scheduler = scheduler_factory.create_scheduler(optimizer)
 
         # Train on the current group
-        lwf_train_model(net, train_dataloader, criterion, optimizer, scheduler, num_epochs, n_known_classes,
+        lwf_train_model(net, train_dataloader, criterion, optimizer, scheduler, num_epochs, n_known_classes, n_classes,
                         log_dir, previous_model)
 
         # Evaluate on the groups seen up to this iteration
