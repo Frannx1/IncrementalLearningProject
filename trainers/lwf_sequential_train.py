@@ -56,15 +56,21 @@ def lwf_sequential_train(net, split_datasets, criterion, optimizer_factory,
         if log_dir_prefix is not None:
             log_dir = os.path.join(log_dir_prefix, 'group_' + str(idx))
 
-        if n_known_classes == n_classes:
+        if n_known_classes > 0:
+            previous_model = copy.deepcopy(net)
+            previous_model.train(False)
+
             # Update network fc layer with more outputs
             n = len(set(train_dataloader.dataset.targets))
             n_classes += n
             in_features = net.fc.in_features
             out_features = net.fc.out_features
             weight = net.fc.weight.data
+            bias = net.fc.bias.data
+
             net.fc = nn.Linear(in_features, n_classes)
             net.fc.weight.data[:out_features] = weight
+            net.fc.bias.data[:out_features] = bias
 
         optimizer = optimizer_factory.create_optimizer(net)
         scheduler = scheduler_factory.create_scheduler(optimizer)
@@ -81,5 +87,3 @@ def lwf_sequential_train(net, split_datasets, criterion, optimizer_factory,
             tb_writer.add_scalar('test accuracy', float(test_acc), idx)
 
         n_known_classes = n_classes
-
-        previous_model = copy.deepcopy(net)
