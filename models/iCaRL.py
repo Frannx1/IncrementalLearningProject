@@ -39,9 +39,6 @@ class iCaRL(MultiTaskLearner):
         self.features_extractor.fc = nn.Sequential()
         self.classifier = nn.Linear(self.features_extractor.out_dim, num_classes)
 
-        torch.nn.init.xavier_uniform_(self.classifier.weight)
-        self.classifier.bias.data.fill_(0.01)
-
         self.exemplars = {}
         self.exemplars_means = None
 
@@ -85,7 +82,7 @@ class iCaRL(MultiTaskLearner):
         self.features_extractor.train(False)
 
         features = self.features_extractor(batch_images)
-        # normalized_features = l2_normalize(features)
+
         normalized_features = []
         for feature in features:
             normalized_features.append(l2_normalize(feature))
@@ -202,10 +199,6 @@ class iCaRL(MultiTaskLearner):
         bias = self.classifier.bias.data
 
         self.classifier = nn.Linear(self.features_extractor.out_dim, self.n_classes)
-
-        # TODO: Check initializations
-        torch.nn.init.xavier_uniform_(self.classifier.weight)
-        self.classifier.bias.data.fill_(0.01)
 
         self.classifier.weight.data[:self.n_classes - n] = weight
         self.classifier.bias.data[:self.n_classes - n] = bias

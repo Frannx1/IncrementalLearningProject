@@ -14,7 +14,7 @@ class Config:
 
     LR = 1e-3            # The initial Learning Rate
     MOMENTUM = 0.9       # Hyperparameter for SGD, keep this at 0.9 when using SGD
-    WEIGHT_DECAY = 5e-5  # Regularization, you can keep this at the default
+    WEIGHT_DECAY = 1e-5  # Regularization, you can keep this at the default
 
     NUM_EPOCHS = int(1)    # Total number of training epochs (iterations over dataset)
     STEP_SIZE = int(2)    # How many epochs before decreasing learning rate (if using a step-down policy)
