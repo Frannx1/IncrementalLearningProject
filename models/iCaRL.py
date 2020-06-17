@@ -14,7 +14,8 @@ from datasets.common_datasets import SimpleDataset
 from models.incremental_base import MultiTaskLearner
 from models.resnet import get_resnet
 from models.utils import l2_normalize
-from models.utils.utilities import timer, remove_row, class_dist_loss_icarl, ReverseIdxSorted
+from models.utils.utilities import timer, remove_row, class_dist_loss_icarl, ReverseIdxSorted, \
+    classification_and_distillation_loss
 
 
 class iCaRL(MultiTaskLearner):
@@ -156,14 +157,14 @@ class iCaRL(MultiTaskLearner):
 
     def before_task(self, train_loader, targets, val_loader=None):
         if self.n_known > 0:
-            n = len(set(targets))
-            self._add_n_classes(n)
-
             self.previous_model = copy.deepcopy(self.features_extractor)
             self.previous_model.fc = copy.deepcopy(self.classifier)
             self.previous_model.train(False)
             for param in self.previous_model.parameters():
                 param.requires_grad = False
+
+            n = len(set(targets))
+            self._add_n_classes(n)
 
             print('adding {} classes, total {}'.format(n, self.n_classes))
 
@@ -199,7 +200,7 @@ class iCaRL(MultiTaskLearner):
                 if self.previous_model is not None:
                     previous_output = self.previous_model(images)
 
-                loss = class_dist_loss_icarl(
+                loss = classification_and_distillation_loss(
                         outputs,
                         labels,
                         previous_output=previous_output,
