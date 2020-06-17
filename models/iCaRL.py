@@ -9,6 +9,7 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 from config import Config
+from datasets.cifar import get_class_dataset
 from datasets.common_datasets import SimpleDataset
 from models.incremental_base import MultiTaskLearner
 from models.resnet import get_resnet
@@ -118,6 +119,7 @@ class iCaRL(MultiTaskLearner):
 
         self._expand_exemplars_means(class_index, class_mean)
         exemplars_feature_sum = torch.zeros((self.features_extractor.out_dim,)).to(Config.DEVICE)
+
         reverse_index = ReverseIdxSorted(len(features))
 
         for k in range(min(self._m, len(features))):
@@ -162,7 +164,7 @@ class iCaRL(MultiTaskLearner):
 
         for images, _ in dataloader:
             images = images.to(Config.DEVICE)
-            features.append(self.features_extractor(images))
+            features.append(l2_normalize(self.features_extractor(images)))
 
             # Sum all
             sum += features[-1].sum(0)
@@ -172,7 +174,7 @@ class iCaRL(MultiTaskLearner):
         mean = sum / qty
         features = torch.cat(features)
 
-        return l2_normalize(features), l2_normalize(mean)
+        return features, l2_normalize(mean)
 
     def _expand_exemplars_means(self, class_idx, mean):
         if self.exemplars_means is None:
@@ -295,8 +297,7 @@ class iCaRL(MultiTaskLearner):
     def after_task(self, train_loader, targets):
         self.reduce_exemplars()
         for class_idx in sorted(set(targets)):
-            indices = train_loader.dataset.get_class_indices(class_idx)
-            class_data = Subset(train_loader.dataset, indices)
+            class_data = get_class_dataset(train_loader.dataset, class_idx)
             class_loader = DataLoader(class_data, batch_size=Config.BATCH_SIZE, shuffle=False)
             self.build_exemplars(class_loader, class_idx)
 

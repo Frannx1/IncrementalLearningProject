@@ -141,3 +141,11 @@ class iCIFARSplit:
             return self.train_groups[self.current_iter], self.test_groups[self.current_iter]
         raise StopIteration
 
+
+def get_class_dataset(dataset, label):
+    if type(dataset) is iCIFAR100:
+        return Subset(dataset, dataset.get_class_indices(label))
+    elif type(dataset) is Subset and type(dataset.dataset) is iCIFAR100:
+        return Subset(dataset.dataset, dataset.dataset.get_class_indices(label))
+    else:
+        raise TypeError('The provided dataset is not allowed to extract a class.')
