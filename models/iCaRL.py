@@ -4,7 +4,7 @@ import numpy as np
 import torch
 from torch import nn
 from torch.backends import cudnn
-from torch.utils.data import DataLoader, Subset, ConcatDataset
+from torch.utils.data import DataLoader, ConcatDataset
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
@@ -14,8 +14,7 @@ from datasets.common_datasets import SimpleDataset
 from models.incremental_base import MultiTaskLearner
 from models.resnet import get_resnet
 from models.utils import l2_normalize
-from models.utils.utilities import timer, remove_row, classification_and_distillation_loss, to_onehot, \
-    class_dist_loss_icarl, ReverseIdxSorted
+from models.utils.utilities import timer, remove_row, class_dist_loss_icarl, ReverseIdxSorted
 
 
 class iCaRL(MultiTaskLearner):
@@ -48,33 +47,7 @@ class iCaRL(MultiTaskLearner):
         x = self.features_extractor(x)
         x = self.classifier(x)
         return x
-    """
-    def classify(self, batch_images):
-        assert self.exemplars_means is not None
-        assert self.exemplars_means.shape[0] == self.n_classes
 
-        self.features_extractor.train(False)
-
-        features = self.features_extractor(batch_images)
-        return self._nearest_prototype(self.exemplars_means, features)
-
-    @staticmethod
-    def _nearest_prototype(centers, features):
-        batch_size = features.size(0)
-        centers = torch.stack([centers] * batch_size)   # (batch_size, n_classes, feature_size)
-        centers = centers.transpose(1, 2)   # (batch_size, feature_size, n_classes)
-
-        normalized_features = []
-        for feature in features:
-            normalized_features.append(l2_normalize(feature))
-        normalized_features = torch.stack(normalized_features, dim=0)
-        normalized_features = normalized_features.unsqueeze(2)  # (batch_size, feature_size, 1)
-        normalized_features = normalized_features.expand_as(centers)    # (batch_size, feature_size, n_classes)
-
-        preds = torch.argmin((normalized_features - centers).pow(2).sum(1), dim=1)
-        return preds
-
-    """
     def classify(self, batch_images):
         assert self.exemplars_means is not None
         assert self.exemplars_means.shape[0] == self.n_classes
@@ -120,7 +93,6 @@ class iCaRL(MultiTaskLearner):
 
         for k in range(min(self._m, len(features))):
             # argmin(class_mean - 1/k * (features + exemplars_sum))
-
             idx = self._get_closest_feature(class_mean, (1.0/(k+1)) * (features + exemplars_feature_sum))
             true_idx = reverse_index[idx]
 
@@ -135,7 +107,7 @@ class iCaRL(MultiTaskLearner):
 
         for images, _ in dataloader:
             images = images.to(Config.DEVICE)
-            features.append(l2_normalize(self.features_extractor(images)))
+            features.append(self.features_extractor(images))
 
         features = torch.cat(features)
         mean = features.mean(dim=0)
@@ -260,8 +232,8 @@ class iCaRL(MultiTaskLearner):
     def after_task(self, train_loader, targets):
         self.reduce_exemplars()
         for class_idx in sorted(set(targets)):
-            class_data = get_class_dataset(train_loader.dataset, class_idx)
-            class_loader = DataLoader(class_data, batch_size=Config.BATCH_SIZE, shuffle=False)
+            class_dataset = get_class_dataset(train_loader.dataset, class_idx)
+            class_loader = DataLoader(class_dataset, batch_size=train_loader.batch_size, shuffle=False)
             self.build_exemplars(class_loader, class_idx)
 
         self.n_known = self.n_classes
