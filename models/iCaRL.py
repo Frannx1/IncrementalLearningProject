@@ -82,20 +82,15 @@ class iCaRL(MultiTaskLearner):
         self.features_extractor.train(False)
 
         features = self.features_extractor(batch_images)
-
-        normalized_features = []
-        for feature in features:
-            normalized_features.append(l2_normalize(feature))
-        normalized_features = torch.stack(normalized_features, dim=0)
-
-        return self._nearest_prototype(self.exemplars_means, normalized_features)
+        return self._nearest_prototype(self.exemplars_means, features)
 
     @staticmethod
     def _nearest_prototype(centers, features):
         pred_labels = []
 
         for feature in features:
-            distances = torch.pow(centers - feature, 2).sum(-1)
+            norm_feature = l2_normalize(feature)
+            distances = torch.pow(centers - norm_feature, 2).sum(-1)
             pred_labels.append(distances.argmin().item())
 
         return torch.from_numpy(np.array(pred_labels))
@@ -115,61 +110,31 @@ class iCaRL(MultiTaskLearner):
             features, class_mean = self._extract_features_and_mean(class_loader)
 
         self._expand_exemplars_means(class_index, class_mean)
-        exemplars_feature_sum = torch.zeros((self.features_extractor.out_dim,)).to(Config.DEVICE)
 
+        exemplars_feature_sum = torch.zeros((self.features_extractor.out_dim,)).to(Config.DEVICE)
         reverse_index = ReverseIdxSorted(len(features))
 
         for k in range(min(self._m, len(features))):
             # argmin(class_mean - 1/k * (features + exemplars_sum))
-            # TODO: checkear porque esta implementacion usa normalizacion_l2 en vez de dividir por k.
-            #       Se entiende que al hacer (exemplars_feature_sum / k) daria como resultado
-            #       exemplars_feature_mean. Porque el paper ademas hace features / k?
-            idx = self._get_closest_feature(class_mean, features + exemplars_feature_sum)
+
+            idx = self._get_closest_feature(class_mean, (1.0/(k+1)) * (features + exemplars_feature_sum))
             true_idx = reverse_index[idx]
 
             exemplars.append(class_loader.dataset[true_idx][0])
             exemplars_feature_sum += features[idx]
-
-            # TODO: en el paper no quita los features ya agregados.
             features = remove_row(features, idx)
 
         self.exemplars[class_index] = exemplars
 
-    """
     def _extract_features_and_mean(self, dataloader):
         features = []
-
-        for images, _ in dataloader:
-            images = images.to(Config.DEVICE)
-            feature = self.features_extractor(images)
-
-            feature = feature / np.linalg.norm(feature.cpu())  # Normalize
-
-            features.append(feature)
-
-        features = torch.cat(features)
-        mean = features.mean(0)
-        mean = mean / np.linalg.norm(mean.cpu())  # Normalize
-
-        return features, mean
-    """
-
-    def _extract_features_and_mean(self, dataloader):
-        sum = torch.zeros((self.features_extractor.out_dim,)).to(Config.DEVICE)
-        features = []
-        qty = 0
 
         for images, _ in dataloader:
             images = images.to(Config.DEVICE)
             features.append(l2_normalize(self.features_extractor(images)))
 
-            # Sum all
-            sum += features[-1].sum(0)
-            # Count how many
-            qty += features[-1].shape[0]    # it is a batch
-
-        mean = sum / qty
         features = torch.cat(features)
+        mean = features.mean(dim=0)
 
         return features, l2_normalize(mean)
 
@@ -181,6 +146,7 @@ class iCaRL(MultiTaskLearner):
             # Checking if the new class follows the previous ones
             assert self.exemplars_means.shape[0] == class_idx, (self.exemplars_means.shape, class_idx)
             self.exemplars_means = torch.cat((self.exemplars_means, mean[None, ...]))
+
     @property
     def _m(self):
         """Returns the number of exemplars per class."""
