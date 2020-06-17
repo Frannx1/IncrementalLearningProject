@@ -179,7 +179,17 @@ class iCaRL(MultiTaskLearner):
 
         cudnn.benchmark  # Calling this optimizes runtime
         current_step = 0
-        # Start iterating over the epochs
+
+        net = self.features_extractor
+        net.fc = self.classifier
+        net = net.to(Config.DEVICE)
+        if self.n_known > 0:
+            old_net = copy.deepcopy(net)
+
+        optimizer = optimizer.create_optimizer(net)
+        scheduler = scheduler.create_scheduler(optimizer)
+
+            # Start iterating over the epochs
         for epoch in range(num_epochs):
             print('Starting epoch {}/{}, LR = {}'.format(epoch + 1, num_epochs, scheduler.get_last_lr()))
 
@@ -190,15 +200,18 @@ class iCaRL(MultiTaskLearner):
                 labels = labels.to(Config.DEVICE)
 
                 self.train()  # Sets module in training mode
+                net.train()
 
                 optimizer.zero_grad()  # Zero-ing the gradients
 
                 # Forward pass to the network
-                outputs = self(images)
+                #outputs = self(images)
+                outputs = net(images)
 
                 previous_output = None
                 if self.previous_model is not None:
-                    previous_output = self.previous_model(images)
+                    #previous_output = self.previous_model(images)
+                    previous_output = old_net(images)
 
                 loss = classification_and_distillation_loss(
                         outputs,
@@ -229,6 +242,9 @@ class iCaRL(MultiTaskLearner):
 
             # Step the scheduler
             scheduler.step()
+        self.features_extractor = copy.deepcopy(net)
+        self.features_extractor.fc = nn.Sequential()
+        self.classifier = copy.deepcopy(net.fc)
 
     def after_task(self, train_loader, targets):
         self.reduce_exemplars()
