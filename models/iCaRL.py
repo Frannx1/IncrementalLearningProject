@@ -101,7 +101,7 @@ class iCaRL(MultiTaskLearner):
         for feature in features:
             normalized_features.append(l2_normalize(feature))
 
-        normalized_features = torch.cat(normalized_features)
+        normalized_features = torch.stack(normalized_features)
         distances = torch.pow(center - normalized_features, 2).sum(-1)
         return distances.argmin().item()
 
