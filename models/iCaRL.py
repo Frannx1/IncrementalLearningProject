@@ -240,8 +240,8 @@ class iCaRL(MultiTaskLearner):
             scheduler.step()
 
     def after_task(self, train_loader, targets):
-        self.reduce_exemplars()
         self.recompute_exemplars_means()
+        self.reduce_exemplars()
         for class_idx in sorted(set(targets)):
             class_dataset = get_class_dataset(train_loader.dataset, class_idx)
             class_loader = DataLoader(class_dataset, batch_size=train_loader.batch_size, shuffle=False)
