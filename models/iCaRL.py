@@ -84,8 +84,7 @@ class iCaRL(MultiTaskLearner):
         exemplars = []
 
         self.eval()
-        with torch.no_grad():
-            features, class_mean = self._extract_features_and_mean(class_loader)
+        features, class_mean = self._extract_features_and_mean(class_loader)
 
         self._expand_exemplars_means(class_index, class_mean)
 
@@ -106,12 +105,13 @@ class iCaRL(MultiTaskLearner):
     def _extract_features_and_mean(self, dataloader):
         features = []
 
-        for images, _ in dataloader:
-            images = images.to(Config.DEVICE)
-            features.append(self.features_extractor(images))
+        with torch.no_grad():
+            for images, _ in dataloader:
+                images = images.to(Config.DEVICE)
+                features.append(l2_normalize(self.features_extractor(images)))
 
-        features = torch.cat(features)
-        mean = features.mean(dim=0)
+            features = torch.cat(features)
+            mean = features.mean(dim=0)
 
         return features, l2_normalize(mean)
 
@@ -240,6 +240,9 @@ class iCaRL(MultiTaskLearner):
             scheduler.step()
 
     def after_task(self, train_loader, targets):
+        self.to(Config.DEVICE)
+        self.train(False)
+
         self.recompute_exemplars_means()
         self.reduce_exemplars()
         for class_idx in sorted(set(targets)):
