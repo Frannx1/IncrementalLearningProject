@@ -15,7 +15,7 @@ from models.incremental_base import MultiTaskLearner
 from models.resnet import get_resnet
 from models.utils import l2_normalize
 from models.utils.utilities import timer, remove_row, class_dist_loss_icarl, ReverseIdxSorted, \
-    classification_and_distillation_loss
+    classification_and_distillation_loss, replace_row
 
 
 class iCaRL(MultiTaskLearner):
@@ -97,8 +97,7 @@ class iCaRL(MultiTaskLearner):
             idx = self._get_closest_feature(class_mean, (1.0/(k+1)) * (features + exemplars_feature_sum))
             true_idx = reverse_index[idx]
 
-            #exemplars.append(class_loader.dataset[true_idx][0])
-            exemplars.append(get_index_from_subset(class_loader.dataset, true_idx))
+            exemplars.append(class_loader.dataset[true_idx][0])
             exemplars_feature_sum += features[idx]
             features = remove_row(features, idx)
 
@@ -135,6 +134,15 @@ class iCaRL(MultiTaskLearner):
         for class_idx in range(len(self.exemplars)):
             self.exemplars[class_idx] = self.exemplars[class_idx][:self._m]
 
+    @timer
+    def recompute_exemplars_means(self):
+        for class_idx in range(len(self.exemplars)):
+            class_dataset = SimpleDataset(self.exemplars[class_idx], [class_idx] * len(self.exemplars[class_idx]))
+            class_loader = DataLoader(class_dataset, batch_size=Config.BATCH_SIZE, shuffle=True,
+                                      num_workers=Config.NUM_WORKERS)
+            _, class_mean = self._extract_features_and_mean(class_loader)
+            self.exemplars_means = replace_row(self.exemplars_means, class_mean, class_idx)
+
     def _add_n_classes(self, n):
         """Add n classes in the final fc layer"""
         self.n_classes += n
@@ -148,18 +156,11 @@ class iCaRL(MultiTaskLearner):
         self.classifier.bias.data[:self.n_classes - n] = bias
 
     def combine_training_exemplars(self, train_loader):
-        """
         datasets = [train_loader.dataset]
         for class_idx in range(len(self.exemplars)):
             datasets.append(SimpleDataset(self.exemplars[class_idx], [class_idx] * len(self.exemplars[class_idx])))
 
         new_train_loader = DataLoader(ConcatDataset(datasets), batch_size=train_loader.batch_size,
-                                      shuffle=True, num_workers=Config.NUM_WORKERS)
-        """
-        indices = train_loader.dataset.indices
-        for class_idx in range(len(self.exemplars)):
-            indices += self.exemplars[class_idx]
-        new_train_loader = DataLoader(Subset(train_loader.dataset.dataset, indices), batch_size=train_loader.batch_size,
                                       shuffle=True, num_workers=Config.NUM_WORKERS)
         return new_train_loader
 
@@ -240,6 +241,7 @@ class iCaRL(MultiTaskLearner):
 
     def after_task(self, train_loader, targets):
         self.reduce_exemplars()
+        self.recompute_exemplars_means()
         for class_idx in sorted(set(targets)):
             class_dataset = get_class_dataset(train_loader.dataset, class_idx)
             class_loader = DataLoader(class_dataset, batch_size=train_loader.batch_size, shuffle=False)

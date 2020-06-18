@@ -18,6 +18,14 @@ def remove_row(matrix, row_idx):
     ))
 
 
+def replace_row(matrix, tensor, row_idx):
+    return torch.cat((
+        matrix[:row_idx, ...],
+        tensor[None, ...],
+        matrix[row_idx + 1:, ...]
+    ))
+
+
 def to_onehot(labels, n_classes):
     return torch.eye(n_classes)[labels]
 
