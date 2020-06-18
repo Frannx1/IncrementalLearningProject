@@ -14,8 +14,7 @@ from datasets.common_datasets import SimpleDataset
 from models.incremental_base import MultiTaskLearner
 from models.resnet import get_resnet
 from models.utils import l2_normalize
-from models.utils.utilities import timer, remove_row, class_dist_loss_icarl, ReverseIdxSorted, \
-    classification_and_distillation_loss
+from models.utils.utilities import timer, remove_row, class_dist_loss_icarl, ReverseIdxSorted
 
 
 class iCaRL(MultiTaskLearner):
@@ -157,14 +156,14 @@ class iCaRL(MultiTaskLearner):
 
     def before_task(self, train_loader, targets, val_loader=None):
         if self.n_known > 0:
+            n = len(set(targets))
+            self._add_n_classes(n)
+
             self.previous_model = copy.deepcopy(self.features_extractor)
             self.previous_model.fc = copy.deepcopy(self.classifier)
             self.previous_model.train(False)
             for param in self.previous_model.parameters():
                 param.requires_grad = False
-
-            n = len(set(targets))
-            self._add_n_classes(n)
 
             print('adding {} classes, total {}'.format(n, self.n_classes))
 
@@ -179,17 +178,7 @@ class iCaRL(MultiTaskLearner):
 
         cudnn.benchmark  # Calling this optimizes runtime
         current_step = 0
-
-        net = self.features_extractor
-        net.fc = self.classifier
-        net = net.to(Config.DEVICE)
-        if self.n_known > 0:
-            old_net = copy.deepcopy(net)
-
-        optimizer = optimizer.create_optimizer(net)
-        scheduler = scheduler.create_scheduler(optimizer)
-
-            # Start iterating over the epochs
+        # Start iterating over the epochs
         for epoch in range(num_epochs):
             print('Starting epoch {}/{}, LR = {}'.format(epoch + 1, num_epochs, scheduler.get_last_lr()))
 
@@ -200,20 +189,17 @@ class iCaRL(MultiTaskLearner):
                 labels = labels.to(Config.DEVICE)
 
                 self.train()  # Sets module in training mode
-                net.train()
 
                 optimizer.zero_grad()  # Zero-ing the gradients
 
                 # Forward pass to the network
-                #outputs = self(images)
-                outputs = net(images)
+                outputs = self(images)
 
                 previous_output = None
                 if self.previous_model is not None:
-                    #previous_output = self.previous_model(images)
-                    previous_output = old_net(images)
+                    previous_output = self.previous_model(images)
 
-                loss = classification_and_distillation_loss(
+                loss = class_dist_loss_icarl(
                         outputs,
                         labels,
                         previous_output=previous_output,
@@ -242,9 +228,6 @@ class iCaRL(MultiTaskLearner):
 
             # Step the scheduler
             scheduler.step()
-        self.features_extractor = copy.deepcopy(net)
-        self.features_extractor.fc = nn.Sequential()
-        self.classifier = copy.deepcopy(net.fc)
 
     def after_task(self, train_loader, targets):
         self.reduce_exemplars()

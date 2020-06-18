@@ -51,11 +51,10 @@ def incremental_train(incremental_learner, split_datasets, optimizer_factory,
         # Train on the current group
         incremental_learner.before_task(train_dataloader, targets=targets)
 
-        #optimizer = optimizer_factory.create_optimizer(incremental_learner)
-        #scheduler = scheduler_factory.create_scheduler(optimizer)
+        optimizer = optimizer_factory.create_optimizer(incremental_learner)
+        scheduler = scheduler_factory.create_scheduler(optimizer)
 
-        #incremental_learner.train_task(train_dataloader, optimizer, scheduler, num_epochs, log_dir=log_dir)
-        incremental_learner.train_task(train_dataloader, optimizer_factory, scheduler_factory, num_epochs, log_dir=log_dir)
+        incremental_learner.train_task(train_dataloader, optimizer, scheduler, num_epochs, log_dir=log_dir)
 
         incremental_learner.after_task(train_dataloader, targets=targets)
 
