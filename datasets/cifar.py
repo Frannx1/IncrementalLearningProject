@@ -149,3 +149,10 @@ def get_class_dataset(dataset, label):
         return Subset(dataset.dataset, dataset.dataset.get_class_indices(label))
     else:
         raise TypeError('The provided dataset is not allowed to extract a class.')
+
+
+def get_index_from_subset(subset, sub_index):
+    if type(subset) is Subset:
+        return subset.indices[sub_index]
+    else:
+        raise TypeError('The provided dataset is not allowed to extract a index.')

@@ -4,12 +4,12 @@ import numpy as np
 import torch
 from torch import nn
 from torch.backends import cudnn
-from torch.utils.data import DataLoader, ConcatDataset
+from torch.utils.data import DataLoader, ConcatDataset, Subset
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 from config import Config
-from datasets.cifar import get_class_dataset
+from datasets.cifar import get_class_dataset, get_index_from_subset
 from datasets.common_datasets import SimpleDataset
 from models.incremental_base import MultiTaskLearner
 from models.resnet import get_resnet
@@ -97,7 +97,8 @@ class iCaRL(MultiTaskLearner):
             idx = self._get_closest_feature(class_mean, (1.0/(k+1)) * (features + exemplars_feature_sum))
             true_idx = reverse_index[idx]
 
-            exemplars.append(class_loader.dataset[true_idx][0])
+            #exemplars.append(class_loader.dataset[true_idx][0])
+            exemplars.append(get_index_from_subset(class_loader.dataset, true_idx))
             exemplars_feature_sum += features[idx]
             features = remove_row(features, idx)
 
@@ -147,11 +148,18 @@ class iCaRL(MultiTaskLearner):
         self.classifier.bias.data[:self.n_classes - n] = bias
 
     def combine_training_exemplars(self, train_loader):
+        """
         datasets = [train_loader.dataset]
         for class_idx in range(len(self.exemplars)):
             datasets.append(SimpleDataset(self.exemplars[class_idx], [class_idx] * len(self.exemplars[class_idx])))
 
         new_train_loader = DataLoader(ConcatDataset(datasets), batch_size=train_loader.batch_size,
+                                      shuffle=True, num_workers=Config.NUM_WORKERS)
+        """
+        indices = train_loader.dataset.indices
+        for class_idx in range(len(self.exemplars)):
+            indices += self.exemplars[class_idx]
+        new_train_loader = DataLoader(Subset(train_loader.dataset.dataset, indices), batch_size=train_loader.batch_size,
                                       shuffle=True, num_workers=Config.NUM_WORKERS)
         return new_train_loader
 
