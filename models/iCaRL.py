@@ -153,7 +153,7 @@ class iCaRL(MultiTaskLearner):
 
         previous_output = None
         if self.n_known > 0:
-            assert previous_output is not None
+            assert self.previous_model is not None
             previous_output = self.previous_model(images)
 
         loss = class_dist_loss_icarl(
