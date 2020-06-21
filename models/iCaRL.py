@@ -3,19 +3,17 @@ import copy
 import numpy as np
 import torch
 from torch import nn
-from torch.backends import cudnn
-from torch.utils.data import DataLoader, ConcatDataset, Subset
-from torch.utils.tensorboard import SummaryWriter
+from torch.utils.data import DataLoader, ConcatDataset
 from tqdm import tqdm
 
 from config import Config
-from datasets.cifar import get_class_dataset, get_index_from_subset
+from datasets.cifar import get_class_dataset
 from datasets.common_datasets import SimpleDataset
 from models.incremental_base import MultiTaskLearner
 from models.resnet import get_resnet
 from models.utils import l2_normalize
 from models.utils.utilities import timer, remove_row, class_dist_loss_icarl, ReverseIdxSorted, \
-    classification_and_distillation_loss, replace_row
+    replace_row
 
 
 class iCaRL(MultiTaskLearner):
@@ -29,16 +27,12 @@ class iCaRL(MultiTaskLearner):
     """
 
     def __init__(self, resnet_type="32", num_classes=10, k=2000):
-        super(iCaRL, self).__init__()
-
-        self.k = k
-        self.n_classes = num_classes
-        self.n_known = 0
+        super(iCaRL, self).__init__(num_classes=num_classes)
 
         self.features_extractor = get_resnet(resnet_type)
         self.features_extractor.fc = nn.Sequential()
-        self.classifier = nn.Linear(self.features_extractor.out_dim, num_classes)
 
+        self.k = k
         self.exemplars = {}
         self.exemplars_means = None
 
@@ -143,19 +137,7 @@ class iCaRL(MultiTaskLearner):
             _, class_mean = self._extract_features_and_mean(class_loader)
             self.exemplars_means = replace_row(self.exemplars_means, class_mean, class_idx)
 
-    def _add_n_classes(self, n):
-        """Add n classes in the final fc layer"""
-        self.n_classes += n
-
-        weight = self.classifier.weight.data
-        bias = self.classifier.bias.data
-
-        self.classifier = nn.Linear(self.features_extractor.out_dim, self.n_classes)
-
-        self.classifier.weight.data[:self.n_classes - n] = weight
-        self.classifier.bias.data[:self.n_classes - n] = bias
-
-    def combine_training_exemplars(self, train_loader):
+    def augment_train_dataset(self, train_loader):
         datasets = [train_loader.dataset]
         for class_idx in range(len(self.exemplars)):
             datasets.append(SimpleDataset(self.exemplars[class_idx], [class_idx] * len(self.exemplars[class_idx])))
@@ -164,80 +146,32 @@ class iCaRL(MultiTaskLearner):
                                       shuffle=True, num_workers=Config.NUM_WORKERS)
         return new_train_loader
 
-    def before_task(self, train_loader, targets, val_loader=None):
-        if self.n_known > 0:
-            n = len(set(targets))
-            self._add_n_classes(n)
+    def before_task(self, train_loader, targets, val_loader=None, use_bias=True):
+        super().before_task(train_loader, targets, val_loader, use_bias)
 
+        if self.n_known > 0:
             self.previous_model = copy.deepcopy(self.features_extractor)
             self.previous_model.fc = copy.deepcopy(self.classifier)
             self.previous_model.train(False)
             for param in self.previous_model.parameters():
                 param.requires_grad = False
 
-            print('Adding {} classes, total {}'.format(n, self.n_classes))
+    def forward_and_compute_loss(self, images, labels):
+        # Forward pass to the network
+        outputs = self(images)
 
-    def train_task(self, train_loader, optimizer, scheduler, num_epochs, val_loader=None, log_dir=None):
-        self.to(Config.DEVICE)  # this will bring the network to GPU if DEVICE is cuda
+        previous_output = None
+        if self.n_known > 0:
+            assert previous_output is not None
+            previous_output = self.previous_model(images)
 
-        if log_dir is not None:
-            # TensorboardX summary writer
-            tb_writer = SummaryWriter(log_dir=log_dir)
-
-        train_exemplars_loader = self.combine_training_exemplars(train_loader)
-
-        cudnn.benchmark  # Calling this optimizes runtime
-        current_step = 0
-        # Start iterating over the epochs
-        for epoch in range(num_epochs):
-            print('Starting epoch {}/{}, LR = {}'.format(epoch + 1, num_epochs, scheduler.get_last_lr()))
-
-            # Iterate over the dataset
-            for images, labels in train_exemplars_loader:
-                # Bring data over the device of choice
-                images = images.to(Config.DEVICE)
-                labels = labels.to(Config.DEVICE)
-
-                self.train()  # Sets module in training mode
-
-                optimizer.zero_grad()  # Zero-ing the gradients
-
-                # Forward pass to the network
-                outputs = self(images)
-
-                previous_output = None
-                if self.previous_model is not None:
-                    previous_output = self.previous_model(images)
-
-                loss = class_dist_loss_icarl(
-                        outputs,
-                        labels,
-                        previous_output=previous_output,
-                        new_idx=self.n_known
-                    )
-
-                # Log the information and add to tensorboard
-                if current_step % Config.LOG_FREQUENCY == 0:
-                    with torch.no_grad():
-                        _, preds = torch.max(outputs, 1)
-                        accuracy = torch.sum(preds == labels) / float(len(labels))
-
-                        print('Epoch: {} \tStep: {} \tLoss: {:.4f} \tAcc: {:.4f}'
-                              .format(epoch + 1, current_step, loss.item(), accuracy.item()))
-
-                        if log_dir is not None:
-                            tb_writer.add_scalar('loss', loss.item(), current_step)
-                            tb_writer.add_scalar('accuracy', accuracy.item(), current_step)
-                            #tb_writer.add_scalar('class_loss', clf_loss.item(), current_step)
-                            #tb_writer.add_scalar('dis_loss', distil_loss.item(), current_step)
-
-                loss.backward()  # backward pass: computes gradients
-                optimizer.step()  # update weights based on accumulated gradients
-
-                current_step += 1
-
-            # Step the scheduler
-            scheduler.step()
+        loss = class_dist_loss_icarl(
+                outputs,
+                labels,
+                previous_output=previous_output,
+                new_idx=self.n_known
+        )
+        return outputs, loss
 
     def after_task(self, train_loader, targets):
         self.to(Config.DEVICE)
@@ -250,25 +184,7 @@ class iCaRL(MultiTaskLearner):
             class_loader = DataLoader(class_dataset, batch_size=train_loader.batch_size, shuffle=False)
             self.build_exemplars(class_loader, class_idx)
 
-        self.n_known = self.n_classes
-
-    def eval_task(self, eval_loader):
-        self.to(Config.DEVICE)  # this will bring the network to GPU if DEVICE is cuda
-        self.train(False)  # Set Network to evaluation mode
-
-        running_corrects = 0
-        for images, labels in tqdm(eval_loader):
-            images = images.to(Config.DEVICE)
-            labels = labels.to(Config.DEVICE)
-
-            # Get predictions
-            preds = self.classify(images).to(Config.DEVICE)
-
-            running_corrects += torch.sum(preds == labels.data).data.item()
-
-        # Calculate Accuracy
-        accuracy = running_corrects / float(len(eval_loader.dataset))
-        return accuracy
+        super().after_task(train_loader, targets)
 
     def eval_hybrid1(self, eval_loader):
         self.to(Config.DEVICE)  # this will bring the network to GPU if DEVICE is cuda

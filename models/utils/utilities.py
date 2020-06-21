@@ -55,7 +55,6 @@ def classification_and_distillation_loss(outputs, labels, previous_output=None, 
     outputs, labels = outputs.to(Config.DEVICE), labels.to(Config.DEVICE)
     labels_onehot = to_onehot(labels, outputs.shape[1]).to(Config.DEVICE)
 
-    #clf_loss = F.binary_cross_entropy_with_logits(outputs[:, new_idx:], labels_onehot[:, new_idx:])
     criterion = nn.BCEWithLogitsLoss(reduction='mean')
     clf_loss = criterion(outputs[:, new_idx:], labels_onehot[:, new_idx:])
 
@@ -63,14 +62,6 @@ def classification_and_distillation_loss(outputs, labels, previous_output=None, 
         assert previous_output is not None
         previous_output = previous_output.to(Config.DEVICE)
         distil_loss = criterion(outputs[:, :new_idx], torch.sigmoid(previous_output[:, :new_idx]))
-        #distil_loss = distillation_loss(
-        #    logits=outputs[:, :new_idx],
-        #    old_logits=torch.sigmoid(previous_output[:, :new_idx])
-        #)
-        #distil_loss = F.binary_cross_entropy_with_logits(
-        #    input=outputs[:, :new_idx],
-        #    target=torch.sigmoid(previous_output[:, :new_idx])
-        # )
     else:
         # First learning no distillation loss
         distil_loss = torch.zeros(1, requires_grad=False).to(Config.DEVICE)

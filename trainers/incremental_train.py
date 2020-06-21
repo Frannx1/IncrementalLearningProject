@@ -63,10 +63,6 @@ def incremental_train(incremental_learner, split_datasets, optimizer_factory,
 
         print('\nTest Accuracy: {}'.format(test_acc))
 
-        test_acc_h1 = incremental_learner.eval_hybrid1(test_dataloader)
-
-        print('\nTest Accuracy hybrid 1: {}'.format(test_acc_h1))
-
         if log_dir_prefix is not None:
             # Log the test accuracy after training a group
             tb_writer.add_scalar('test accuracy', float(test_acc), idx)
