@@ -10,7 +10,6 @@ from config import Config
 from datasets.cifar import get_class_dataset
 from datasets.common_datasets import SimpleDataset
 from models.incremental_base import MultiTaskLearner
-from models.resnet import get_resnet
 from models.utils import l2_normalize
 from models.utils.utilities import timer, remove_row, class_dist_loss_icarl, ReverseIdxSorted, \
     replace_row
@@ -27,21 +26,13 @@ class iCaRL(MultiTaskLearner):
     """
 
     def __init__(self, resnet_type="32", num_classes=10, k=2000):
-        super(iCaRL, self).__init__(num_classes=num_classes)
-
-        self.features_extractor = get_resnet(resnet_type)
-        self.features_extractor.fc = nn.Sequential()
+        super(iCaRL, self).__init__(resnet_type=resnet_type, num_classes=num_classes)
 
         self.k = k
         self.exemplars = {}
         self.exemplars_means = None
 
         self.previous_model = None
-
-    def forward(self, x):
-        x = self.features_extractor(x)
-        x = self.classifier(x)
-        return x
 
     def classify(self, batch_images):
         assert self.exemplars_means is not None

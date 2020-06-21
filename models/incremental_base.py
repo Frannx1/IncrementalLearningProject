@@ -7,6 +7,7 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 from config import Config
+from models.resnet import get_resnet
 
 
 class MultiTaskLearner(nn.Module):
@@ -19,12 +20,24 @@ class MultiTaskLearner(nn.Module):
 
     Reference: https://github.com/AfricanxAdmiral/icarl/blob/master/inclearn/models/base.py
     """
-    def __init__(self, num_classes=10):
+    def __init__(self, resnet_type="32", num_classes=10):
         super(MultiTaskLearner, self).__init__()
         self.n_classes = num_classes
         self.n_known = 0
 
+        self.features_extractor = get_resnet(resnet_type)
+        self.features_extractor.fc = nn.Sequential()
         self.classifier = nn.Linear(self.features_extractor.out_dim, num_classes)
+
+    def forward(self, x):
+        x = self.features_extractor(x)
+        x = self.classifier(x)
+        return x
+
+    def classify(self, batch_images):
+        class_pred = self(batch_images)
+        _, preds = torch.max(class_pred.data, 1)
+        return preds
 
     def before_task(self, train_loader, targets, val_loader, use_bias):
         if self.n_known > 0:
@@ -123,8 +136,4 @@ class MultiTaskLearner(nn.Module):
 
     @abstractmethod
     def forward_and_compute_loss(self, images, labels):
-        pass
-
-    @abstractmethod
-    def classify(self, images):
         pass
