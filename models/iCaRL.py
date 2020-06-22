@@ -54,11 +54,7 @@ class iCaRL(MultiTaskLearner):
 
     @staticmethod
     def _get_closest_feature(center, features):
-        normalized_features = []
-        for feature in features:
-            normalized_features.append(l2_normalize(feature))
-
-        normalized_features = torch.stack(normalized_features)
+        normalized_features = l2_normalize(features, dim=1)
         distances = torch.pow(center - normalized_features, 2).sum(-1)
         return distances.argmin().item()
 
@@ -91,7 +87,7 @@ class iCaRL(MultiTaskLearner):
         with torch.no_grad():
             for images, _ in dataloader:
                 images = images.to(Config.DEVICE)
-                features.append(l2_normalize(self.features_extractor(images)))
+                features.append(l2_normalize(self.features_extractor(images), dim=1))
 
             features = torch.cat(features)
             mean = features.mean(dim=0)

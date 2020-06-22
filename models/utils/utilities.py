@@ -7,8 +7,8 @@ from torch.nn import functional as F
 from config import Config
 
 
-def l2_normalize(tensor):
-    return tensor / torch.norm(tensor, p=2)
+def l2_normalize(tensor, dim=None):
+    return F.normalize(tensor, p=2, dim=dim)
 
 
 def remove_row(matrix, row_idx):
