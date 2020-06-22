@@ -43,7 +43,7 @@ class DoubleLossBuilder:
     @staticmethod
     def build(device, class_loss='bce', dist_loss='bce'):
         class_loss, onehot_labels = DoubleLossBuilder._get_loss(class_loss)
-        dist_loss = DoubleLossBuilder._get_loss(dist_loss)
+        dist_loss, _ = DoubleLossBuilder._get_loss(dist_loss)
         double_loss = DoubleLoss(class_loss, dist_loss, onehot_labels, device)
         return double_loss
 
