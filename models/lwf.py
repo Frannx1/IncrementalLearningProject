@@ -3,12 +3,11 @@ import copy
 import torch.nn as nn
 from models.incremental_base import MultiTaskLearner
 from models.resnet import get_resnet
-from models.utils.utilities import classification_and_distillation_loss
 
 
 class LwF(MultiTaskLearner):
-    def __init__(self, resnet_type="32", num_classes=10):
-        super(LwF, self).__init__(resnet_type=resnet_type, num_classes=num_classes)
+    def __init__(self, loss, resnet_type="32", num_classes=10):
+        super(LwF, self).__init__(loss, resnet_type=resnet_type, num_classes=num_classes)
 
         self.features_extractor = get_resnet(resnet_type)
         self.features_extractor.fc = nn.Sequential()
@@ -34,11 +33,11 @@ class LwF(MultiTaskLearner):
             assert self.previous_model is not None
             previous_output = self.previous_model(images)
 
-        loss = classification_and_distillation_loss(
-                outputs,
-                labels,
-                previous_output=previous_output,
-                new_idx=self.n_known
+        loss = self.loss.compute_loss(
+            outputs,
+            labels,
+            previous_output=previous_output,
+            new_idx=self.n_known
         )
         return outputs, loss
 

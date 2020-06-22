@@ -20,10 +20,12 @@ class MultiTaskLearner(nn.Module):
 
     Reference: https://github.com/AfricanxAdmiral/icarl/blob/master/inclearn/models/base.py
     """
-    def __init__(self, resnet_type="32", num_classes=10):
+    def __init__(self, loss, resnet_type="32", num_classes=10):
         super(MultiTaskLearner, self).__init__()
         self.n_classes = num_classes
         self.n_known = 0
+
+        self.loss = loss
 
         self.features_extractor = get_resnet(resnet_type)
         self.features_extractor.fc = nn.Sequential()

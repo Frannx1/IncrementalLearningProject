@@ -2,7 +2,6 @@ import copy
 
 import numpy as np
 import torch
-from torch import nn
 from torch.utils.data import DataLoader, ConcatDataset
 from tqdm import tqdm
 
@@ -11,8 +10,7 @@ from datasets.cifar import get_class_dataset
 from datasets.common_datasets import SimpleDataset
 from models.incremental_base import MultiTaskLearner
 from models.utils import l2_normalize
-from models.utils.utilities import timer, remove_row, class_dist_loss_icarl, ReverseIdxSorted, \
-    replace_row
+from models.utils.utilities import timer, remove_row, ReverseIdxSorted, replace_row
 
 
 class iCaRL(MultiTaskLearner):
@@ -25,8 +23,8 @@ class iCaRL(MultiTaskLearner):
       https://github.com/imyzx2017/icarl.pytorch/blob/master/icarl.py
     """
 
-    def __init__(self, resnet_type="32", num_classes=10, k=2000):
-        super(iCaRL, self).__init__(resnet_type=resnet_type, num_classes=num_classes)
+    def __init__(self, loss, resnet_type="32", num_classes=10, k=2000):
+        super(iCaRL, self).__init__(loss, resnet_type=resnet_type, num_classes=num_classes)
 
         self.k = k
         self.exemplars = {}
@@ -156,7 +154,7 @@ class iCaRL(MultiTaskLearner):
             assert self.previous_model is not None
             previous_output = self.previous_model(images)
 
-        loss = class_dist_loss_icarl(
+        loss = self.loss.compute_loss(
                 outputs,
                 labels,
                 previous_output=previous_output,
