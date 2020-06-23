@@ -136,7 +136,9 @@ class iCaRL(MultiTaskLearner):
 
         if self.n_known > 0:
             self.previous_model = copy.deepcopy(self.features_extractor)
-            self.previous_model.fc = copy.deepcopy(self.classifier)
+            if not self.loss.dist_feature:
+                self.previous_model.fc = copy.deepcopy(self.classifier)
+
             self.previous_model.train(False)
             for param in self.previous_model.parameters():
                 param.requires_grad = False
@@ -145,16 +147,24 @@ class iCaRL(MultiTaskLearner):
         # Forward pass to the network
         outputs = self(images)
 
-        previous_output = None
+        previous_output, features, old_features = None, None, None
+
         if self.n_known > 0:
             assert self.previous_model is not None
-            previous_output = self.previous_model(images)
+
+            if self.loss.dist_feature:
+                features = self.features_extractor(images)
+                old_features = self.previous_model(images)
+            else:
+                previous_output = self.previous_model(images)
 
         loss = self.loss.compute_loss(
-                outputs,
-                labels,
-                previous_output=previous_output,
-                new_idx=self.n_known
+            outputs,
+            labels,
+            previous_output=previous_output,
+            new_idx=self.n_known,
+            features=features,
+            old_features=old_features
         )
         return outputs, loss
 
