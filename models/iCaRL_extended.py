@@ -9,18 +9,14 @@ from models.utils import l2_normalize
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
 
-from models.utils.utilities import replace_row
-
 
 class iCaRLExtended(iCaRL):
 
     def __init__(self, loss, resnet_type="32", num_classes=10, k=2000, classifier='SVC', **classifier_params):
         super(iCaRLExtended, self).__init__(loss, resnet_type, num_classes, k)
 
-        self.classifier_model, self.require_normalize, self.require_train = \
+        self.classifier_model, self.require_numpy, self.require_train = \
             self.get_classifier_config(classifier, classifier_params)
-
-        self.nn_exemplars_means = None     # Not normalized exemplars means
 
     def classify(self, batch_images):
         assert self.exemplars_means is not None
@@ -29,9 +25,9 @@ class iCaRLExtended(iCaRL):
         self.features_extractor.train(False)
 
         features = self.features_extractor(batch_images)
+        features = l2_normalize(features, dim=1)
 
-        if self.require_normalize:
-            features = l2_normalize(features, dim=1)
+        if self.require_numpy:
             X = []
             for feature in features:
                 X.append(feature.squeeze().cpu().detach().numpy())
@@ -45,7 +41,7 @@ class iCaRLExtended(iCaRL):
 
         if self.require_train:
             if type(self.classifier_model) is CosineSimilarityClassifier:
-                self.classifier_model.fit(self.nn_exemplars_means)
+                self.classifier_model.fit(self.exemplars_means)
             else:
                 X, y = [], []
                 for class_idx in range(len(self.exemplars)):
@@ -62,7 +58,7 @@ class iCaRLExtended(iCaRL):
 
     @staticmethod
     def get_classifier_config(classifier, classifier_params):
-        # Returns the classifier, if it requires normalized features and if it requires a training
+        # Returns the classifier, if it requires numpy detach features and if it requires a training
         if classifier == 'KNN':
             return KNeighborsClassifier(**classifier_params), True, True
         if classifier == 'SVC':
@@ -71,38 +67,6 @@ class iCaRLExtended(iCaRL):
             return CosineSimilarityClassifier(**classifier_params), False, True
         else:
             raise NotImplementedError('Classifier not implemented.')
-
-    def _extract_features_and_mean(self, dataloader):
-        if type(self.classifier_model) is CosineSimilarityClassifier:
-            # For Cosine Similarity it is required the means without normalization
-            nn_features = []
-            with torch.no_grad():
-                for images, class_idx in dataloader:
-                    images = images.to(Config.DEVICE)
-                    nn_features.append(self.features_extractor(images))
-
-                nn_features = torch.cat(nn_features)
-                features = l2_normalize(nn_features, dim=1)
-                nn_mean = nn_features.mean(dim=0)
-                mean = features.mean(dim=0)
-
-            self._expand_nn_exemplars_means(class_idx[0].item(), nn_mean)
-            return features, l2_normalize(mean)
-        else:
-            return super()._extract_features_and_mean(dataloader)
-
-    def _expand_nn_exemplars_means(self, class_idx, nn_mean):
-        if self.nn_exemplars_means is None:
-            assert class_idx == 0
-            self.nn_exemplars_means = nn_mean[None, ...]
-        else:
-            # Checking if the new class follows the previous ones
-            if self.nn_exemplars_means.shape[0] == class_idx:
-                self.nn_exemplars_means = torch.cat((self.nn_exemplars_means, nn_mean[None, ...]))
-            elif self.nn_exemplars_means.shape[0] > class_idx:
-                self.exemplars_means = replace_row(self.nn_exemplars_means, nn_mean, class_idx)
-            else:
-                raise ValueError('Adding a not normalized exemplar mean in an incorrect index.')
 
 
 class CosineSimilarityClassifier:

@@ -65,6 +65,7 @@ class DoubleLossBuilder:
 
     @staticmethod
     def get_loss_conf(loss, type):
+        # Returns the loss and if it needs the features output or not (the fc output).
         loss = loss.lower()
         if loss == 'l2':
             if type == 'dist':
@@ -75,6 +76,11 @@ class DoubleLossBuilder:
             return CrossEntropyLossOneHot(), False
         if loss == 'bce':
             return nn.BCEWithLogitsLoss(), False
-
+        if loss == 'cos':
+            if type == 'dist':
+                return nn.CosineEmbeddingLoss(), True
+            else:
+                raise ValueError('It is not possible to have a Cosine Embedding loss for classification.')
         raise NotImplementedError()
+
 
