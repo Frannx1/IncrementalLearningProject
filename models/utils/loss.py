@@ -13,6 +13,13 @@ class CrossEntropyLossOneHot(nn.CrossEntropyLoss):
         return super().forward(input, target)
 
 
+class MaximizeCosineSimilarityLoss(nn.CosineEmbeddingLoss):
+
+    def forward(self, input1, input2, target=None):
+        target = torch.ones(input1.shape)
+        return super().forward(input1, input2, target)
+
+
 class Loss(ABC):
 
     @abstractmethod
@@ -20,7 +27,7 @@ class Loss(ABC):
         pass
 
 
-class DoubleLoss(Loss):
+class ClassDistLoss(Loss):
 
     def __init__(self, class_loss, dist_loss, balanced, dist_feature, device):
         self.class_loss = class_loss
@@ -54,13 +61,13 @@ class DoubleLoss(Loss):
         return class_factor * class_loss + dist_factor * dist_loss
 
 
-class DoubleLossBuilder:
+class ClassDistLossBuilder:
 
     @staticmethod
     def build(device, class_loss='bce', dist_loss='bce', balanced=True):
-        class_loss, _ = DoubleLossBuilder.get_loss_conf(class_loss, 'class')
-        dist_loss, dist_feature = DoubleLossBuilder.get_loss_conf(dist_loss, 'dist')
-        double_loss = DoubleLoss(class_loss, dist_loss, balanced, dist_feature, device)
+        class_loss, _ = ClassDistLossBuilder.get_loss_conf(class_loss, 'class')
+        dist_loss, dist_feature = ClassDistLossBuilder.get_loss_conf(dist_loss, 'dist')
+        double_loss = ClassDistLoss(class_loss, dist_loss, balanced, dist_feature, device)
         return double_loss
 
     @staticmethod
@@ -76,6 +83,11 @@ class DoubleLossBuilder:
             return CrossEntropyLossOneHot(), False
         if loss == 'bce':
             return nn.BCEWithLogitsLoss(), False
+        if loss == 'cos':
+            if type == 'dist':
+                return MaximizeCosineSimilarityLoss(), True
+            else:
+                raise ValueError('It is not possible to have a Cosine Embedding loss for classification.')
         raise NotImplementedError()
 
 

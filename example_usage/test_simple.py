@@ -4,7 +4,7 @@ from datasets import iCIFARSplit
 from models import SimpleLearner
 from trainers.incremental_train import incremental_train
 from config import Config
-from models.utils import SDGOptimizerAllFactory, MultiStepLRSchedulerFactory, DoubleLossBuilder
+from models.utils import SDGOptimizerAllFactory, MultiStepLRSchedulerFactory, ClassDistLossBuilder
 
 
 if __name__ == "__main__":
@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
     def prepare_basic_model(class_loss, lr, milestones=Config.MILESTONES, gamma=Config.GAMMA):
         num_classes = int(Config.NUM_CLASSES / Config.NUM_GROUPS)
-        loss = DoubleLossBuilder.build(Config.DEVICE, class_loss=class_loss)
+        loss = ClassDistLossBuilder.build(Config.DEVICE, class_loss=class_loss)
         net = SimpleLearner(loss, resnet_type='32', num_classes=num_classes)
 
         # Define optimizer

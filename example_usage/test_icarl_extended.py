@@ -5,7 +5,7 @@ from datasets import iCIFARSplit
 from models.iCaRL_extended import iCaRLExtended
 from trainers.incremental_train import incremental_train
 from config import Config
-from models.utils import SDGOptimizerAllFactory, StepLRSchedulerFactory, MultiStepLRSchedulerFactory, DoubleLossBuilder
+from models.utils import SDGOptimizerAllFactory, StepLRSchedulerFactory, MultiStepLRSchedulerFactory, ClassDistLossBuilder
 
 
 if __name__ == "__main__":
@@ -36,8 +36,8 @@ if __name__ == "__main__":
 
     def prepare_iCaRL(class_loss, dist_loss, lr, milestones=Config.MILESTONES, gamma=Config.GAMMA):
         num_classes = int(Config.NUM_CLASSES / Config.NUM_GROUPS)
-        loss = DoubleLossBuilder.build(Config.DEVICE, class_loss=class_loss, dist_loss=dist_loss)
-        net = iCaRLExtended(loss, resnet_type='32', num_classes=num_classes, classifier='KNN', n_neighbors=5)
+        loss = ClassDistLossBuilder.build(Config.DEVICE, class_loss=class_loss, dist_loss=dist_loss)
+        net = iCaRLExtended(loss, resnet_type='32', num_classes=num_classes, classifier='COS', n_neighbors=5)
 
         # Define optimizer
         optimizer_factory = SDGOptimizerAllFactory(lr=lr,
@@ -51,7 +51,7 @@ if __name__ == "__main__":
         return net, optimizer_factory, scheduler_factory
 
 
-    icarl , optimizer_factory, scheduler_factory = prepare_iCaRL('bce', 'l2', 1.0,
+    icarl , optimizer_factory, scheduler_factory = prepare_iCaRL('bce', 'cos', 1.0,
                                                                  Config.MILESTONES,
                                                                  Config.GAMMA)
     incremental_train(icarl, split_datasets, optimizer_factory,

@@ -5,7 +5,7 @@ from datasets import iCIFARSplit
 from models import iCaRL
 from trainers.incremental_train import incremental_train
 from config import Config
-from models.utils import SDGOptimizerAllFactory, StepLRSchedulerFactory, MultiStepLRSchedulerFactory, DoubleLossBuilder
+from models.utils import SDGOptimizerAllFactory, StepLRSchedulerFactory, MultiStepLRSchedulerFactory, ClassDistLossBuilder
 
 if __name__ == "__main__":
 
@@ -35,7 +35,7 @@ if __name__ == "__main__":
 
     def prepare_iCaRL(class_loss, dist_loss, lr, milestones=Config.MILESTONES, gamma=Config.GAMMA):
         num_classes = int(Config.NUM_CLASSES / Config.NUM_GROUPS)
-        loss = DoubleLossBuilder.build(Config.DEVICE, class_loss=class_loss, dist_loss=dist_loss)
+        loss = ClassDistLossBuilder.build(Config.DEVICE, class_loss=class_loss, dist_loss=dist_loss)
         net = iCaRL(loss, resnet_type='32',
                     num_classes=num_classes)  # Loading addapted Resnet with NUM_CLASSES / NUM_GROUPS outputs
 
