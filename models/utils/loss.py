@@ -76,11 +76,6 @@ class DoubleLossBuilder:
             return CrossEntropyLossOneHot(), False
         if loss == 'bce':
             return nn.BCEWithLogitsLoss(), False
-        if loss == 'cos':
-            if type == 'dist':
-                return nn.CosineEmbeddingLoss(), True
-            else:
-                raise ValueError('It is not possible to have a Cosine Embedding loss for classification.')
         raise NotImplementedError()
 
 
