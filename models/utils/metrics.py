@@ -62,7 +62,7 @@ class MinkowskiMetric(Metric):
         self.p = p
 
     def norm(self, tensor):
-        return torch.abs(tensor).pow(self.p).pow(1.0 / self.p)
+        return torch.abs(tensor).pow(self.p).pow(1.0 / self.p).sum(1)
 
     def calculate_distance(self, tensor1, tensor2):
         minkowski_distance = self.norm(tensor1 - tensor2)
