@@ -41,8 +41,7 @@ class iCaRL(MultiTaskLearner):
         features = self.features_extractor(batch_images)
         return self._nearest_prototype(self.exemplars_means, features)
 
-    @staticmethod
-    def _nearest_prototype(centers, features):
+    def _nearest_prototype(self, centers, features):
         pred_labels = []
 
         for feature in features:
@@ -52,8 +51,7 @@ class iCaRL(MultiTaskLearner):
 
         return torch.from_numpy(np.array(pred_labels))
 
-    @staticmethod
-    def _get_closest_feature(center, features):
+    def _get_closest_feature(self, center, features):
         normalized_features = l2_normalize(features, dim=1)
         distances = torch.pow(center - normalized_features, 2).sum(-1)
         return distances.argmin().item()

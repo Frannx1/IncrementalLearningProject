@@ -7,8 +7,6 @@ from torch.utils.tensorboard import SummaryWriter
 
 from config import Config
 
-from torch.nn import functional as F
-
 from models.utils.utilities import to_onehot
 
 

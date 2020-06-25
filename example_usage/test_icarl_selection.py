@@ -2,7 +2,7 @@ import torch.nn as nn
 from torchvision import transforms
 
 from datasets import iCIFARSplit
-from models.iCaRL_extended import iCaRLExtended
+from models.iCaRL_selection import iCaRLSelection
 from trainers.incremental_train import incremental_train
 from config import Config
 from models.utils import SDGOptimizerAllFactory, StepLRSchedulerFactory, MultiStepLRSchedulerFactory, ClassDistLossBuilder
@@ -37,7 +37,7 @@ if __name__ == "__main__":
     def prepare_iCaRL(class_loss, dist_loss, lr, milestones=Config.MILESTONES, gamma=Config.GAMMA):
         num_classes = int(Config.NUM_CLASSES / Config.NUM_GROUPS)
         loss = ClassDistLossBuilder.build(Config.DEVICE, class_loss=class_loss, dist_loss=dist_loss)
-        net = iCaRLExtended(loss, resnet_type='32', num_classes=num_classes, classifier='COS', n_neighbors=5)
+        net = iCaRLSelection(loss, resnet_type='32', num_classes=num_classes, selector='L2')
 
         # Define optimizer
         optimizer_factory = SDGOptimizerAllFactory(lr=lr,

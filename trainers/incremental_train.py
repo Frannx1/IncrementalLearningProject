@@ -16,10 +16,9 @@ def incremental_train(incremental_learner, split_datasets, optimizer_factory,
         and then the network will be evaluated over the test set.
 
     Args:
-        net: The network to train.
+        incremental_learner: The network to train.
         split_datasets(iterable): A iterator with a train and test datasets
             split into groups.
-        criterion: The selected loss function.
         optimizer_factory: A object that implements the create_optimizer
             method which returns the network's optimizer.
         scheduler_factory: A object that implements the create_scheduler
