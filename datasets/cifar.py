@@ -1,3 +1,5 @@
+import random
+
 from PIL import Image
 from torch.utils.data import Subset
 from torchvision.datasets import CIFAR100
@@ -27,6 +29,7 @@ class iCIFAR100(CIFAR100):
     def __init__(self,
                  root='./data',
                  train=True,
+                 permute_target=None,
                  download=True,
                  transform=None,
                  target_transform=None,
@@ -44,7 +47,10 @@ class iCIFAR100(CIFAR100):
         for i in range(len(self.data)):
             if self.targets[i] in classes:
                 data.append(self.data[i])
-                targets.append(self.targets[i])
+                if permute_target is not None:
+                    targets.append(permute_target[self.targets[i]])
+                else:
+                    targets.append(self.targets[i])
 
         self.data = np.array(data)
         self.targets = targets
@@ -99,10 +105,11 @@ class iCIFARSplit:
         self.train_groups = []
         self.test_groups = []
         self.train_groups_classes = {}
+        self.target_transform = random.sample(range(100), 100)
         self.current_iter = -1
 
-        self.dataset_train = iCIFAR100(transform=train_transform)
-        self.dataset_test = iCIFAR100(transform=test_transform, download=False)
+        self.dataset_train = iCIFAR100(transform=train_transform, permute_target=self.target_transform)
+        self.dataset_test = iCIFAR100(transform=test_transform, permute_target=self.target_transform, download=False)
 
         for group_idx in range(total_groups):
             first_class = int(group_idx * self.class_per_group)
