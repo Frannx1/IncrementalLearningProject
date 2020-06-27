@@ -10,13 +10,6 @@ from models.utils import SDGOptimizerAllFactory, StepLRSchedulerFactory, MultiSt
 
 if __name__ == "__main__":
 
-    optimizer_factory = SDGOptimizerAllFactory(lr=Config.LR,
-                                               momentum=Config.MOMENTUM,
-                                               weight_decay=Config.WEIGHT_DECAY)
-    # Define scheduler
-    scheduler_factory = StepLRSchedulerFactory(step_size=Config.STEP_SIZE,
-                                               gamma=Config.GAMMA)
-
     transform_train = transforms.Compose([
             transforms.RandomCrop(32, padding=4),
             transforms.RandomHorizontalFlip(),
@@ -36,8 +29,8 @@ if __name__ == "__main__":
 
     def prepare_iCaRL(class_loss, dist_loss, lr, milestones=Config.MILESTONES, gamma=Config.GAMMA):
         num_classes = int(Config.NUM_CLASSES / Config.NUM_GROUPS)
-        loss = ClassDistLossBuilder.build(Config.DEVICE, class_loss=class_loss, dist_loss=dist_loss)
-        net = iCaRLSelection(loss, resnet_type='32', num_classes=num_classes, selector='L2')
+        loss = ClassDistLossBuilder.build(Config.DEVICE, class_loss=class_loss, dist_loss=dist_loss, p=5)
+        net = iCaRLSelection(loss, resnet_type='32', num_classes=num_classes, selector='l2', p=5)
 
         # Define optimizer
         optimizer_factory = SDGOptimizerAllFactory(lr=lr,
@@ -51,7 +44,7 @@ if __name__ == "__main__":
         return net, optimizer_factory, scheduler_factory
 
 
-    icarl , optimizer_factory, scheduler_factory = prepare_iCaRL('bce', 'cos', 1.0,
+    icarl , optimizer_factory, scheduler_factory = prepare_iCaRL('bce', 'l2', 1.0,
                                                                  Config.MILESTONES,
                                                                  Config.GAMMA)
     incremental_train(icarl, split_datasets, optimizer_factory,

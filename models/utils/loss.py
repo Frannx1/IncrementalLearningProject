@@ -2,7 +2,9 @@ from abc import abstractmethod, ABC
 
 import torch
 from torch import nn
+from torch.nn.modules.loss import _Loss
 
+from models.utils import metrics
 from models.utils.utilities import to_onehot
 
 
@@ -18,6 +20,16 @@ class MaximizeCosineSimilarityLoss(nn.CosineEmbeddingLoss):
     def forward(self, input1, input2, target=None):
         target = torch.ones(input1.shape[0]).to(input1.device)
         return super().forward(input1, input2, target)
+
+
+class MetricLoss(_Loss):
+
+    def __init__(self, metric):
+        super(_Loss, self).__init__()
+        self.metric = metric
+
+    def forward(self, input, target):
+        return self.metric.calculate_distance(input, target).mean()
 
 
 class Loss(ABC):
@@ -64,21 +76,36 @@ class ClassDistLoss(Loss):
 class ClassDistLossBuilder:
 
     @staticmethod
-    def build(device, class_loss='bce', dist_loss='bce', balanced=True):
-        class_loss, _ = ClassDistLossBuilder.get_loss_conf(class_loss, 'class')
-        dist_loss, dist_feature = ClassDistLossBuilder.get_loss_conf(dist_loss, 'dist')
+    def build(device, class_loss='bce', dist_loss='bce', balanced=True, **param_loss):
+        class_loss, _ = ClassDistLossBuilder.get_loss_conf(class_loss, 'class', **param_loss)
+        dist_loss, dist_feature = ClassDistLossBuilder.get_loss_conf(dist_loss, 'dist', **param_loss)
         double_loss = ClassDistLoss(class_loss, dist_loss, balanced, dist_feature, device)
         return double_loss
 
     @staticmethod
-    def get_loss_conf(loss, type):
+    def get_loss_conf(loss, type, **param_loss):
         # Returns the loss and if it needs the features output or not (the fc output).
         loss = loss.lower()
+        if loss == 'l1':
+            if type == 'dist':
+                return nn.L1Loss(), True
+            else:
+                raise ValueError('It is not possible to have a L1 loss for classification.')
         if loss == 'l2':
             if type == 'dist':
                 return nn.MSELoss(), True
             else:
                 raise ValueError('It is not possible to have a L2 loss for classification.')
+        if loss == 'cheb':
+            if type == 'dist':
+                return MetricLoss(metrics.ChebyshevMetric()), True
+            else:
+                raise ValueError('It is not possible to have a Chebyshe loss for classification.')
+        if loss == 'minkowski':
+            if type == 'dist':
+                return MetricLoss(metrics.MinkowskiMetric(**param_loss)), True
+            else:
+                raise ValueError('It is not possible to have a Minkowski loss for classification.')
         if loss == 'ce':
             return CrossEntropyLossOneHot(), False
         if loss == 'bce':
@@ -87,7 +114,7 @@ class ClassDistLossBuilder:
             if type == 'dist':
                 return MaximizeCosineSimilarityLoss(), True
             else:
-                raise ValueError('It is not possible to have a Cosine Embedding loss for classification.')
+                raise ValueError('It is not possible to have a Cosine loss for classification.')
         raise NotImplementedError()
 
 

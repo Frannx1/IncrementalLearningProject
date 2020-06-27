@@ -10,13 +10,6 @@ from models.utils import SDGOptimizerAllFactory, StepLRSchedulerFactory, MultiSt
 
 if __name__ == "__main__":
 
-    optimizer_factory = SDGOptimizerAllFactory(lr=Config.LR,
-                                               momentum=Config.MOMENTUM,
-                                               weight_decay=Config.WEIGHT_DECAY)
-    # Define scheduler
-    scheduler_factory = StepLRSchedulerFactory(step_size=Config.STEP_SIZE,
-                                               gamma=Config.GAMMA)
-
     transform_train = transforms.Compose([
             transforms.RandomCrop(32, padding=4),
             transforms.RandomHorizontalFlip(),
