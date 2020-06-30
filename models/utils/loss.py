@@ -18,7 +18,7 @@ class CrossEntropyLossOneHot(nn.CrossEntropyLoss):
 class MaximizeCosineSimilarityLoss(nn.CosineEmbeddingLoss):
 
     def forward(self, input1, input2, target=None):
-        target = torch.ones(input1.shape[0]).to(input1.device)
+        target = torch.ones(input1.shape[0]).to(input1.device)  # target len as batch_size
         return super().forward(input1, input2, target)
 
 
