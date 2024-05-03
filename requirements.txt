@@ -3,5 +3,5 @@ numpy
 torch
 torchvision
 # need tqdm version 4.30.0 for compatibility
-tqdm==4.30.0
+tqdm==4.66.3
 tensorflow
